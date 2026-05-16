@@ -1,16 +1,74 @@
 # Subnetly – KNT IP Planer
 
-IP-Subnetz-Dokumentation für KNT-Internet.
-Erreichbar unter https://subnetly.kntinternet.de.
+Dokumentation und Verwaltung der IP-Subnetz-Vergaben.
+Erreichbar unter <https://subnetly.kntinternet.de> (Reverse Proxy →
+`<host>:${NGINX_HOST_PORT}`).
 
-## Setup
-Siehe `docs/superpowers/specs/2026-05-16-subnetly-design.md` und
-`docs/superpowers/plans/2026-05-16-subnetly-implementation.md`.
+## Stack
+Django 5 · PostgreSQL 16 · Gunicorn · nginx · Docker Compose.
 
-## Quickstart
+## First-run setup
+
 ```bash
+cd /srv/docker/IP-Planer
 cp .env.example .env
-# .env editieren (DJANGO_SECRET_KEY, DB-Passwort, Superuser)
-docker compose up -d
-docker compose exec web python manage.py import_wiki docs/wiki-export.txt
+$EDITOR .env   # SECRET_KEY, DB_PASSWORD, SUPERUSER_*
+docker compose up -d --build
+```
+
+Beim ersten Hochfahren werden:
+- die DB initialisiert,
+- Migrations gefahren (inkl. EXCLUDE-Constraint),
+- statische Dateien gesammelt,
+- der Superuser aus `DJANGO_SUPERUSER_*` angelegt (idempotent).
+
+Im Browser unter `http://<host>:8080/login/` einloggen.
+
+## Pools anlegen
+
+Über `/admin/`: neuer `Pool` mit CIDR (z.B. `217.61.248.0/23`),
+optional `block_prefix` (Auflösung der Blockansicht, z.B. `30`).
+
+## Wiki-Import
+
+1. Wiki-Dump als Textdatei nach `docs/wiki-export.txt` legen.
+2. Import laufen lassen:
+   ```bash
+   docker compose exec web python manage.py import_wiki docs/wiki-export.txt
+   ```
+   Übersprungene Einträge stehen im Logfile `import_wiki_<ts>.log`
+   im Arbeitsverzeichnis des Containers.
+
+## Backups
+
+Container `backup` dumpt täglich um 02:30 nach Volume `db_backups`
+(`/backups/subnetly_<ts>.sql.gz`, Rotation 7 Tage).
+Restore:
+
+```bash
+docker compose exec -T db pg_restore -U "${DB_USER}" -d "${DB_NAME}" < dump.sql
+```
+
+## Tests
+
+```bash
+docker compose exec web pytest -v
+```
+
+## Reverse-Proxy-Beispiel (nginx, extern)
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name subnetly.kntinternet.de;
+    # ssl_certificate / ssl_certificate_key ...
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
 ```
