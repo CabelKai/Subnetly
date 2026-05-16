@@ -216,3 +216,61 @@ def test_application_edit_loads_and_saves(auth_client):
     a.refresh_from_db()
     assert a.name == "NewName"
     assert a.notes == "new"
+
+
+@pytest.mark.django_db
+def test_pool_new_ipv4_requires_block_prefix(auth_client):
+    response = auth_client.post("/pool/new/", {
+        "name": "P",
+        "cidr": "10.0.0.0/24",
+        "block_prefix": "",
+        "notes": "",
+    })
+    body = response.content.decode()
+    assert response.status_code == 200  # form re-rendered
+    assert "erforderlich" in body.lower() or "required" in body.lower()
+
+
+@pytest.mark.django_db
+def test_pool_new_ipv4_happy_path(auth_client):
+    response = auth_client.post("/pool/new/", {
+        "name": "P",
+        "cidr": "10.0.0.0/24",
+        "block_prefix": "28",
+        "notes": "",
+    })
+    assert response.status_code == 302
+    assert Pool.objects.filter(cidr="10.0.0.0/24").exists()
+
+
+@pytest.mark.django_db
+def test_pool_new_ipv6_happy_path(auth_client):
+    response = auth_client.post("/pool/new/", {
+        "name": "P6",
+        "cidr": "2001:db8::/32",
+        "block_prefix": "",
+        "notes": "",
+    })
+    assert response.status_code == 302
+    p = Pool.objects.get(cidr="2001:db8::/32")
+    assert p.ip_version == 6
+    assert p.block_prefix is None
+
+
+@pytest.mark.django_db
+def test_pool_edit_loads_and_saves(auth_client):
+    p = Pool.objects.create(name="Old", cidr="10.1.0.0/24", block_prefix=28)
+    response = auth_client.get(f"/pool/{p.id}/edit/")
+    assert response.status_code == 200
+
+    response = auth_client.post(f"/pool/{p.id}/edit/", {
+        "name": "NewName",
+        "cidr": "10.1.0.0/24",
+        "block_prefix": "29",
+        "notes": "edited",
+    })
+    assert response.status_code == 302
+    p.refresh_from_db()
+    assert p.name == "NewName"
+    assert p.block_prefix == 29
+    assert p.notes == "edited"
