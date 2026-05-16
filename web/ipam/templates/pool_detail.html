@@ -27,22 +27,22 @@
          style="grid-template-columns: repeat({{ cells_per_row }}, minmax(0, 1fr));">
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
-                <div class="rounded p-1 text-xs overflow-visible cursor-pointer hover:opacity-80 transition-opacity"
-                     style="grid-column: span {{ b.span }}; background-color: {{ b.color }};"
-                     title="{{ b.cidr }} – {{ b.application.name }}">
+                <div class="group relative rounded p-1 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                     style="grid-column: span {{ b.span }}; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
                        class="block w-full h-full no-underline text-slate-900">
                         <span class="font-semibold truncate block">{{ b.application.name }}</span>
-                        <span class="font-mono truncate block">{% cidr_tooltip b.cidr %}</span>
+                        <span class="font-mono truncate block">{{ b.cidr }}</span>
                     </a>
+                    {% cidr_tooltip_panel b.cidr %}
                 </div>
             {% else %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}?cidr={{ b.cidr }}"
-                   class="block rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 overflow-visible no-underline"
-                   style="grid-column: span {{ b.span }};"
-                   title="Hier neu zuweisen: {{ b.cidr }}">
+                   class="group relative block rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 no-underline"
+                   style="grid-column: span {{ b.span }};">
                     <span class="font-mono truncate block">free</span>
-                    <span class="font-mono truncate block">{% cidr_tooltip b.cidr %}</span>
+                    <span class="font-mono truncate block">{{ b.cidr }}</span>
+                    {% cidr_tooltip_panel b.cidr %}
                 </a>
             {% endif %}
         {% endfor %}

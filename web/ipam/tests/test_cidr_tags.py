@@ -68,3 +68,32 @@ def test_html_escapes_user_input():
     out = render("<script>alert(1)</script>")
     assert "<script>" not in out  # raw must be escaped
     assert "&lt;script&gt;" in out
+
+
+def render_panel(cidr):
+    t = Template("{% load cidr_tags %}{% cidr_tooltip_panel cidr %}")
+    return t.render(Context({"cidr": cidr}))
+
+
+def test_panel_ipv4_returns_only_inner_span():
+    out = render_panel("217.61.249.0/28")
+    # Inner panel span is present
+    assert "group-hover:visible" in out
+    assert "Network" in out
+    assert "Nutzbare IPs" in out
+    assert "Broadcast" in out
+    # But the outer wrapper (the CIDR text itself) is NOT
+    assert "217.61.249.0/28" not in out  # the CIDR string is NOT in the panel output
+    # ('cidr_tooltip_panel' renders only the tooltip; the CIDR label belongs to the caller's markup)
+
+
+def test_panel_ipv6_returns_only_inner_span():
+    out = render_panel("2a05:ed80:100:400::/64")
+    assert "group-hover:visible" in out
+    assert "2^64" in out
+    assert "2a05:ed80:100:400::/64" not in out
+
+
+def test_panel_invalid_returns_empty_string():
+    out = render_panel("not-a-cidr")
+    assert out == ""
