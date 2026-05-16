@@ -5,6 +5,13 @@ from netaddr import IPNetwork
 from .models import Application, Assignment
 
 
+class ApplicationForm(forms.ModelForm):
+    class Meta:
+        model = Application
+        fields = ["name", "notes"]
+        widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+
+
 class AssignmentForm(forms.ModelForm):
     """ModelForm for Assignment, excluding `pool` (injected from URL)."""
 
