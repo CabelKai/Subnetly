@@ -1,6 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Zuweisung{% endblock %}
+{% block title %}{% if assignment %}Zuweisung bearbeiten{% else %}Neue Zuweisung{% endif %}{% endblock %}
 {% block content %}
-<h1 class="text-xl font-bold mb-4">Zuweisung (folgt in T16)</h1>
-<p class="text-slate-500">Formular wird in Task 16 implementiert.</p>
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-800 mb-1">
+        {% if assignment %}Zuweisung bearbeiten{% else %}Neue Zuweisung{% endif %}
+    </h1>
+
+    {# Pool info (read-only) #}
+    <div class="mb-6 bg-slate-100 border border-slate-300 rounded px-4 py-3 text-sm text-slate-700">
+        <span class="font-semibold">Pool:</span>
+        {{ pool.name }} &mdash; <code class="font-mono">{{ pool.cidr }}</code>
+    </div>
+
+    {# Non-field errors #}
+    {% if form.non_field_errors %}
+    <div class="mb-4 bg-red-50 border border-red-300 rounded px-4 py-3 text-sm text-red-700">
+        {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="mb-4">
+            <label for="{{ field.id_for_label }}"
+                   class="block text-sm font-medium text-slate-700 mb-1">
+                {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+            </label>
+            {{ field }}
+            {% if field.errors %}
+            <ul class="mt-1 text-xs text-red-600">
+                {% for error in field.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if field.help_text %}
+            <p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="flex items-center gap-4 mt-6">
+            <button type="submit"
+                    class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium px-5 py-2 rounded">
+                Speichern
+            </button>
+            <a href="{% url 'ipam:pool_detail' pool.pk %}"
+               class="text-sm text-slate-500 hover:text-slate-700 underline">
+                Abbrechen
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

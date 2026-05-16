@@ -98,3 +98,56 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
     # Rendered as a table (not the "folgt" placeholder)
     assert "IPv6-Ansicht folgt" not in body
     assert "<table" in body
+
+
+@pytest.mark.django_db
+def test_assignment_new_rejects_overlap(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    c1 = Customer.objects.create(name="A")
+    Customer.objects.create(name="B")
+    Assignment.objects.create(pool=p, customer=c1, cidr="217.61.249.0/30")
+
+    response = auth_client.post(f"/pool/{p.id}/assign/new/", {
+        "customer": Customer.objects.get(name="B").id,
+        "cidr": "217.61.249.0/29",
+        "gateway": "",
+        "notes": "",
+    })
+    body = response.content.decode()
+    assert response.status_code == 200  # form re-rendered, not 302
+    assert "Überschnei" in body  # German error text
+
+
+@pytest.mark.django_db
+def test_assignment_new_happy_path_redirects(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    c = Customer.objects.create(name="A")
+
+    response = auth_client.post(f"/pool/{p.id}/assign/new/", {
+        "customer": c.id,
+        "cidr": "217.61.249.0/30",
+        "gateway": "217.61.249.1",
+        "notes": "Router",
+    })
+    assert response.status_code == 302
+    assert Assignment.objects.filter(pool=p, cidr="217.61.249.0/30").exists()
+
+
+@pytest.mark.django_db
+def test_assignment_edit_loads_and_saves(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    c = Customer.objects.create(name="A")
+    a = Assignment.objects.create(pool=p, customer=c, cidr="217.61.249.0/30", notes="old")
+
+    response = auth_client.get(f"/assignment/{a.id}/edit/")
+    assert response.status_code == 200
+
+    response = auth_client.post(f"/assignment/{a.id}/edit/", {
+        "customer": c.id,
+        "cidr": "217.61.249.0/30",
+        "gateway": "",
+        "notes": "new",
+    })
+    assert response.status_code == 302
+    a.refresh_from_db()
+    assert a.notes == "new"

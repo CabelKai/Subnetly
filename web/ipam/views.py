@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
 
+from .forms import AssignmentForm
 from .models import Assignment, Pool
 from .services.blocks import compute_blocks
 from .services.colors import color_for
@@ -82,10 +83,30 @@ def pool_detail(request, pool_id):
 @login_required
 def assignment_new(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id)
-    return render(request, "assignment_form.html", {"pool": pool})
+    initial = {}
+    if "cidr" in request.GET:
+        initial["cidr"] = request.GET["cidr"]
+    if request.method == "POST":
+        form = AssignmentForm(request.POST, pool=pool)
+        if form.is_valid():
+            instance = form.save(commit=False)
+            instance.pool = pool
+            instance.save()
+            return redirect("ipam:pool_detail", pool_id=pool_id)
+    else:
+        form = AssignmentForm(initial=initial, pool=pool)
+    return render(request, "assignment_form.html", {"form": form, "pool": pool})
 
 
 @login_required
 def assignment_edit(request, assignment_id):
     assignment = get_object_or_404(Assignment, pk=assignment_id)
-    return render(request, "assignment_form.html", {"assignment": assignment})
+    pool = assignment.pool
+    if request.method == "POST":
+        form = AssignmentForm(request.POST, instance=assignment, pool=pool)
+        if form.is_valid():
+            form.save()
+            return redirect("ipam:pool_detail", pool_id=pool.pk)
+    else:
+        form = AssignmentForm(instance=assignment, pool=pool)
+    return render(request, "assignment_form.html", {"form": form, "pool": pool, "assignment": assignment})
