@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load cidr_tags %}
 {% block title %}{{ application.name }}{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-1">
@@ -22,8 +23,8 @@
     <tbody>
     {% for a in assignments %}
         <tr class="border-t">
-            <td class="p-2 font-mono"><a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{{ a.pool.cidr }}</a></td>
-            <td class="p-2 font-mono">{{ a.cidr }}</td>
+            <td class="p-2 font-mono"><a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{% cidr_tooltip a.pool.cidr %}</a></td>
+            <td class="p-2 font-mono">{% cidr_tooltip a.cidr %}</td>
             <td class="p-2 font-mono">{{ a.gateway|default_if_none:"" }}</td>
             <td class="p-2 text-slate-600">{{ a.notes|truncatechars:80 }}</td>
             <td class="p-2 text-right"><a href="{% url 'ipam:assignment_edit' a.id %}" class="underline">bearbeiten</a></td>

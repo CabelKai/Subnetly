@@ -1,7 +1,8 @@
+{% load cidr_tags %}
 {% for pool in sidebar_pools %}
     <details class="mb-2" open>
         <summary class="cursor-pointer">
-            <a href="{% url 'ipam:pool_detail' pool.id %}" class="font-mono hover:underline">{{ pool.cidr }}</a>
+            <a href="{% url 'ipam:pool_detail' pool.id %}" class="font-mono hover:underline">{% cidr_tooltip pool.cidr %}</a>
         </summary>
         <div class="pl-3 mt-1">
             {% for c in pool.applications %}
@@ -11,7 +12,7 @@
                     </summary>
                     <ul class="pl-4 mt-1 text-xs font-mono text-slate-600">
                         {% for a in c.assignments %}
-                            <li><a href="{% url 'ipam:pool_detail' a.pool_id %}#a{{ a.id }}" class="hover:underline">{{ a.cidr }}</a></li>
+                            <li><a href="{% url 'ipam:pool_detail' a.pool_id %}#a{{ a.id }}" class="hover:underline">{% cidr_tooltip a.cidr %}</a></li>
                         {% endfor %}
                     </ul>
                 </details>
