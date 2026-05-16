@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Anwendungen{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-semibold mb-4">Anwendungen</h1>
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">Anwendungen</h1>
+    <a href="{% url 'ipam:application_new' %}"
+       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+        + Anwendung
+    </a>
+</div>
 <table class="w-full bg-white rounded shadow text-sm">
     <thead class="bg-slate-100">
         <tr><th class="text-left p-2">Name</th><th class="text-left p-2">Zuweisungen</th></tr>
