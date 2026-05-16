@@ -69,3 +69,23 @@ def test_assignment_ip_family_must_match_pool(pool_v4):
     a = Assignment(pool=pool_v4, customer=c, cidr="2a05:ed80:100:1::/64")
     with pytest.raises(ValidationError):
         a.full_clean()
+
+
+@pytest.mark.django_db
+def test_assignments_in_same_pool_cannot_overlap(pool_v4):
+    c1 = Customer.objects.create(name="A")
+    c2 = Customer.objects.create(name="B")
+    Assignment.objects.create(pool=pool_v4, customer=c1, cidr="217.61.249.0/28")
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            Assignment.objects.create(pool=pool_v4, customer=c2, cidr="217.61.249.8/29")
+
+
+@pytest.mark.django_db
+def test_assignments_in_different_pools_can_overlap_logically(pool_v4, pool_v6):
+    # Different pools = different rows in the EXCLUDE constraint partition,
+    # so logically overlapping CIDRs in unrelated pools are allowed.
+    # Use CIDRs that match each pool's family.
+    c = Customer.objects.create(name="Z")
+    Assignment.objects.create(pool=pool_v4, customer=c, cidr="217.61.249.0/28")
+    Assignment.objects.create(pool=pool_v6, customer=c, cidr="2a05:ed80:100:1::/64")
