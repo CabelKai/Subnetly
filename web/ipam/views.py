@@ -1,4 +1,3 @@
-import math
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
@@ -52,7 +51,7 @@ def pool_detail(request, pool_id):
                 b["color"] = color_for(src.application.name)
                 b["application"] = src.application
                 b["obj"] = src
-            b["flex_grow"] = max(1, int(math.log2(b["size"]))) if b["size"] > 0 else 1
+            b["flex_grow"] = b["size"]
 
         context = {
             "pool": pool,
