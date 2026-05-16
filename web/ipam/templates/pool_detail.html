@@ -43,6 +43,38 @@
     </div>
 
 {% else %}
-    <p class="text-slate-500 italic">IPv6-Ansicht folgt.</p>
+    <div class="mb-4">
+        <a href="{% url 'ipam:assignment_new' pool.id %}"
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+            + Zuweisung
+        </a>
+    </div>
+    <table class="w-full text-sm border-collapse">
+        <thead>
+            <tr class="bg-slate-100 text-slate-600 text-left">
+                <th class="px-3 py-2 font-semibold">CIDR</th>
+                <th class="px-3 py-2 font-semibold">Kunde</th>
+                <th class="px-3 py-2 font-semibold">Aktion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in v6_rows %}
+            <tr class="border-t border-slate-200 hover:bg-slate-50">
+                <td class="px-3 py-2 font-mono">{{ row.cidr }}</td>
+                <td class="px-3 py-2">{{ row.customer.name }}</td>
+                <td class="px-3 py-2">
+                    <a href="{% url 'ipam:assignment_edit' row.id %}"
+                       class="text-blue-600 hover:underline text-xs">Bearbeiten</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="px-3 py-4 text-center text-slate-400 italic">
+                    Keine Zuweisungen vorhanden.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endif %}
 {% endblock %}

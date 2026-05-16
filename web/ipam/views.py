@@ -67,7 +67,14 @@ def pool_detail(request, pool_id):
             "cells_per_row": cells_per_row,
         }
     else:
-        context = {"pool": pool, "blocks": None}
+        db_assignments = list(
+            pool.assignments.select_related("customer").order_by("cidr")
+        )
+        context = {
+            "pool": pool,
+            "blocks": None,
+            "v6_rows": db_assignments,
+        }
 
     return render(request, "pool_detail.html", context)
 

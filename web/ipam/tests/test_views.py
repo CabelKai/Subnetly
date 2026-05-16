@@ -71,3 +71,30 @@ def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
     assert "grid" in body
     # Free block indicator
     assert "free" in body.lower()
+
+
+@pytest.mark.django_db
+def test_ipv6_pool_detail_lists_assignments(auth_client):
+    """Pool detail page renders a table of assignments for IPv6 pools."""
+    p = Pool.objects.create(name="v6Pool", cidr="2001:db8::/32", block_prefix=48)
+    c1 = Customer.objects.create(name="AlphaNet")
+    c2 = Customer.objects.create(name="BetaCorp")
+    Assignment.objects.create(pool=p, customer=c1, cidr="2001:db8:1::/48")
+    Assignment.objects.create(pool=p, customer=c2, cidr="2001:db8:2::/48")
+
+    response = auth_client.get(f"/pool/{p.id}/")
+    assert response.status_code == 200
+    body = response.content.decode()
+
+    # Pool name and CIDR appear
+    assert "v6Pool" in body
+    assert "2001:db8::/32" in body
+    # Both customers listed
+    assert "AlphaNet" in body
+    assert "BetaCorp" in body
+    # Both assignment CIDRs listed
+    assert "2001:db8:1::/48" in body
+    assert "2001:db8:2::/48" in body
+    # Rendered as a table (not the "folgt" placeholder)
+    assert "IPv6-Ansicht folgt" not in body
+    assert "<table" in body
