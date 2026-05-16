@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
 
-from .forms import ApplicationForm, AssignmentForm
+from .forms import ApplicationForm, AssignmentForm, PoolForm
 from .models import Application, Assignment, Pool
 from .services.blocks import compute_blocks
 from .services.colors import color_for
@@ -153,3 +153,28 @@ def application_edit(request, application_id):
     else:
         form = ApplicationForm(instance=app)
     return render(request, "application_form.html", {"form": form, "mode": "edit", "obj": app})
+
+
+@login_required
+def pool_new(request):
+    if request.method == "POST":
+        form = PoolForm(request.POST)
+        if form.is_valid():
+            pool = form.save()
+            return redirect("ipam:pool_detail", pool_id=pool.id)
+    else:
+        form = PoolForm()
+    return render(request, "pool_form.html", {"form": form, "mode": "new"})
+
+
+@login_required
+def pool_edit(request, pool_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+    if request.method == "POST":
+        form = PoolForm(request.POST, instance=pool)
+        if form.is_valid():
+            form.save()
+            return redirect("ipam:pool_detail", pool_id=pool.id)
+    else:
+        form = PoolForm(instance=pool)
+    return render(request, "pool_form.html", {"form": form, "mode": "edit", "obj": pool})

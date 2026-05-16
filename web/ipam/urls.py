@@ -13,4 +13,6 @@ urlpatterns = [
     path("anwendung/<int:application_id>/", views.application_detail, name="application_detail"),
     path("anwendung/new/", views.application_new, name="application_new"),
     path("anwendung/<int:application_id>/edit/", views.application_edit, name="application_edit"),
+    path("pool/new/", views.pool_new, name="pool_new"),
+    path("pool/<int:pool_id>/edit/", views.pool_edit, name="pool_edit"),
 ]
