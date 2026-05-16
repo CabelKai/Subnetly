@@ -24,8 +24,23 @@ _PALETTE = [
 
 
 def color_for(name: str) -> str:
-    """Stable color hex for an application name."""
+    """Stable color hex for an application name (md5-based, may collide)."""
     if not name:
         return "#E5E7EB"
     h = hashlib.md5(name.encode("utf-8")).digest()
     return _PALETTE[h[0] % len(_PALETTE)]
+
+
+def colors_for_set(names) -> dict:
+    """Assign a distinct color per name from the palette, for a set of names.
+
+    Names are sorted alphabetically (case-insensitive) and then assigned
+    palette entries by position — so within a single view, no two names share
+    a color as long as the count fits in the palette. Beyond palette length,
+    colors wrap.
+
+    The same set of names always produces the same color mapping (sort makes
+    it deterministic).
+    """
+    unique = sorted({n for n in names if n}, key=str.casefold)
+    return {n: _PALETTE[i % len(_PALETTE)] for i, n in enumerate(unique)}

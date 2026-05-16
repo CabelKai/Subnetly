@@ -2,7 +2,7 @@ import pytest
 from netaddr import IPAddress, IPNetwork
 
 from ipam.services.blocks import compute_blocks, largest_aligned_subnets
-from ipam.services.colors import color_for
+from ipam.services.colors import color_for, colors_for_set
 
 
 def _assigned(cidr, label):
@@ -57,6 +57,32 @@ def test_color_stable_for_same_name():
 def test_color_returns_hex():
     c = color_for("X")
     assert c.startswith("#") and len(c) == 7
+
+
+def test_colors_for_set_unique_within_palette_size():
+    # 16 distinct names — all should map to distinct colors (palette size = 16)
+    names = [f"App{i:02d}" for i in range(16)]
+    mapping = colors_for_set(names)
+    assert len(mapping) == 16
+    assert len(set(mapping.values())) == 16
+
+
+def test_colors_for_set_deterministic_regardless_of_input_order():
+    a = colors_for_set(["BINSS", "Falcon", "SWE"])
+    b = colors_for_set(["SWE", "BINSS", "Falcon"])
+    assert a == b
+
+
+def test_colors_for_set_ignores_empty_names():
+    mapping = colors_for_set(["BINSS", "", None, "Falcon"])
+    assert set(mapping.keys()) == {"BINSS", "Falcon"}
+
+
+def test_colors_for_set_wraps_beyond_palette():
+    # 18 names → at least 2 share a color (16-slot palette)
+    names = [f"App{i:02d}" for i in range(18)]
+    mapping = colors_for_set(names)
+    assert len(set(mapping.values())) == 16  # all 16 used, but wrap causes 2 duplicates
 
 
 def test_largest_aligned_subnets_perfect_alignment():

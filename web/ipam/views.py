@@ -7,7 +7,7 @@ from netaddr import IPNetwork
 from .forms import ApplicationForm, AssignmentForm, PoolForm
 from .models import Application, Assignment, Pool
 from .services.blocks import compute_blocks
-from .services.colors import color_for
+from .services.colors import colors_for_set
 
 
 def _pool_utilization_percent(pool: Pool) -> int:
@@ -44,6 +44,10 @@ def pool_detail(request, pool_id):
         ]
         blocks = compute_blocks(pool_net, assignments)
 
+        # Per-pool color map: each unique application in this pool gets a
+        # distinct palette slot (no collisions while #apps ≤ palette size).
+        color_map = colors_for_set(a.application.name for a in db_assignments)
+
         # Augment assigned blocks with color / application / ORM obj; compute
         # a size-proportional width (rem). 0.3 rem per IP gives a /23 pool
         # an ideal total of ~150 rem (~2400 px) — wider than most viewports,
@@ -52,7 +56,7 @@ def pool_detail(request, pool_id):
         for b in blocks:
             if b["kind"] == "assigned":
                 src = next(a for a in db_assignments if IPNetwork(str(a.cidr)) == b["cidr"])
-                b["color"] = color_for(src.application.name)
+                b["color"] = color_map.get(src.application.name, "#E5E7EB")
                 b["application"] = src.application
                 b["obj"] = src
             # Format as string with dot (CSS requires C-locale decimal separator,
