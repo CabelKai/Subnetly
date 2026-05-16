@@ -151,3 +151,30 @@ def test_assignment_edit_loads_and_saves(auth_client):
     assert response.status_code == 302
     a.refresh_from_db()
     assert a.notes == "new"
+
+
+@pytest.mark.django_db
+def test_customer_list_shows_count(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    c = Customer.objects.create(name="BINSS")
+    Assignment.objects.create(pool=p, customer=c, cidr="217.61.249.0/30")
+    Assignment.objects.create(pool=p, customer=c, cidr="217.61.249.4/30")
+
+    response = auth_client.get("/customers/")
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert "BINSS" in body
+    assert "2" in body  # count appears
+
+
+@pytest.mark.django_db
+def test_customer_detail_lists_assignments(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    c = Customer.objects.create(name="BINSS")
+    Assignment.objects.create(pool=p, customer=c, cidr="217.61.249.0/30")
+
+    response = auth_client.get(f"/customer/{c.id}/")
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert "BINSS" in body
+    assert "217.61.249.0/30" in body

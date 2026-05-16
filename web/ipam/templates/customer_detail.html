@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-1">{{ customer.name }}</h1>
+{% if customer.notes %}<p class="text-slate-700 mb-3">{{ customer.notes }}</p>{% endif %}
+<table class="w-full bg-white rounded shadow text-sm">
+    <thead class="bg-slate-100">
+        <tr>
+            <th class="text-left p-2">Pool</th>
+            <th class="text-left p-2">CIDR</th>
+            <th class="text-left p-2">Gateway</th>
+            <th class="text-left p-2">Notes</th>
+            <th class="p-2"></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for a in assignments %}
+        <tr class="border-t">
+            <td class="p-2 font-mono"><a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{{ a.pool.cidr }}</a></td>
+            <td class="p-2 font-mono">{{ a.cidr }}</td>
+            <td class="p-2 font-mono">{{ a.gateway|default_if_none:"" }}</td>
+            <td class="p-2 text-slate-600">{{ a.notes|truncatechars:80 }}</td>
+            <td class="p-2 text-right"><a href="{% url 'ipam:assignment_edit' a.id %}" class="underline">bearbeiten</a></td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="p-4 text-center text-slate-500">Keine Zuweisungen.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

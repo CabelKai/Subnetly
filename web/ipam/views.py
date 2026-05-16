@@ -1,9 +1,10 @@
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
 
 from .forms import AssignmentForm
-from .models import Assignment, Pool
+from .models import Assignment, Customer, Pool
 from .services.blocks import compute_blocks
 from .services.colors import color_for
 
@@ -110,3 +111,20 @@ def assignment_edit(request, assignment_id):
     else:
         form = AssignmentForm(instance=assignment, pool=pool)
     return render(request, "assignment_form.html", {"form": form, "pool": pool, "assignment": assignment})
+
+
+@login_required
+def customer_list(request):
+    customers = Customer.objects.annotate(
+        n_assignments=Count("assignments")
+    ).order_by("name")
+    return render(request, "customer_list.html", {"customers": customers})
+
+
+@login_required
+def customer_detail(request, customer_id):
+    customer = get_object_or_404(Customer, pk=customer_id)
+    assignments = customer.assignments.select_related("pool").order_by("pool__cidr", "cidr")
+    return render(request, "customer_detail.html", {
+        "customer": customer, "assignments": assignments,
+    })
