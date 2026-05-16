@@ -44,14 +44,20 @@ def pool_detail(request, pool_id):
         ]
         blocks = compute_blocks(pool_net, assignments)
 
-        # Augment assigned blocks with color / application / ORM obj; compute flex_grow
+        # Augment assigned blocks with color / application / ORM obj; compute
+        # a size-proportional width (rem). 0.3 rem per IP gives a /23 pool
+        # an ideal total of ~150 rem (~2400 px) — wider than most viewports,
+        # so the container wraps; clamps to max-content (readability) and
+        # 100% (single oversized block fills its row instead of overflowing).
         for b in blocks:
             if b["kind"] == "assigned":
                 src = next(a for a in db_assignments if IPNetwork(str(a.cidr)) == b["cidr"])
                 b["color"] = color_for(src.application.name)
                 b["application"] = src.application
                 b["obj"] = src
-            b["flex_grow"] = b["size"]
+            # Format as string with dot (CSS requires C-locale decimal separator,
+            # not the German comma that Django would emit via float interpolation).
+            b["width_rem"] = f"{b['size'] * 0.3:.2f}"
 
         context = {
             "pool": pool,

@@ -24,7 +24,7 @@
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
                 <div class="group relative rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                     style="flex: {{ b.flex_grow }} 0 auto; min-width: max-content; background-color: {{ b.color }};">
+                     style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
                        class="block no-underline text-slate-900">
                         <span class="font-semibold block">{{ b.application.name }}</span>
@@ -35,7 +35,7 @@
             {% else %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
                    class="group relative block rounded border border-dashed border-slate-300 bg-slate-50 p-2 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 no-underline"
-                   style="flex: {{ b.flex_grow }} 0 auto; min-width: max-content;">
+                   style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto;">
                     <span class="block">frei</span>
                     <span class="font-mono block">{{ b.size }} IPs</span>
                     {% free_suggestions_tooltip_panel b.suggestions b.size %}
