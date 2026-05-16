@@ -5,7 +5,7 @@ from .models import Application, Assignment, Pool
 
 @admin.register(Pool)
 class PoolAdmin(admin.ModelAdmin):
-    list_display = ("name", "cidr", "ip_version", "block_prefix")
+    list_display = ("name", "cidr", "ip_version")
     search_fields = ("name", "cidr")
     readonly_fields = ("ip_version",)
 

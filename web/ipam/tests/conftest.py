@@ -7,7 +7,6 @@ def pool_v4(db):
     return Pool.objects.create(
         name="Anycast 217.61.248.0/23",
         cidr="217.61.248.0/23",
-        block_prefix=30,
     )
 
 

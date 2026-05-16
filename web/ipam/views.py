@@ -1,3 +1,5 @@
+import math
+
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -41,32 +43,20 @@ def pool_detail(request, pool_id):
             {"cidr": IPNetwork(str(a.cidr)), "label": a.application.name}
             for a in db_assignments
         ]
-        blocks = compute_blocks(pool_net, assignments, block_prefix=pool.block_prefix)
+        blocks = compute_blocks(pool_net, assignments)
 
-        # Augment assigned blocks with color / application / ORM obj
+        # Augment assigned blocks with color / application / ORM obj; compute flex_grow
         for b in blocks:
             if b["kind"] == "assigned":
-                db_a = next(
-                    a for a in db_assignments
-                    if IPNetwork(str(a.cidr)) == b["cidr"]
-                )
-                b["color"] = color_for(db_a.application.name)
-                b["application"] = db_a.application
-                b["obj"] = db_a
-
-        # Grid geometry: total cells = pool size / cell size
-        block_prefix = pool.block_prefix or pool_net.prefixlen
-        cell_size = 2 ** (32 - block_prefix)
-        total_cells = pool_net.size // cell_size
-        # Aim for ~16-32 cells per row; pick the largest power-of-two <= sqrt(total)
-        import math
-        cells_per_row = max(1, 2 ** math.floor(math.log2(max(1, math.isqrt(total_cells)))))
+                src = next(a for a in db_assignments if IPNetwork(str(a.cidr)) == b["cidr"])
+                b["color"] = color_for(src.application.name)
+                b["application"] = src.application
+                b["obj"] = src
+            b["flex_grow"] = max(1, int(math.log2(b["size"]))) if b["size"] > 0 else 1
 
         context = {
             "pool": pool,
             "blocks": blocks,
-            "total_cells": total_cells,
-            "cells_per_row": cells_per_row,
         }
     else:
         db_assignments = list(

@@ -14,7 +14,7 @@ def auth_client(db, client):
 
 @pytest.mark.django_db
 def test_sidebar_groups_assignments_by_pool_then_application(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.248.0/23", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.248.0/23", )
     a1 = Application.objects.create(name="BINSS")
     a2 = Application.objects.create(name="Falcon")
     Assignment.objects.create(pool=p, application=a1, cidr="217.61.249.0/28")
@@ -37,7 +37,7 @@ def test_sidebar_groups_assignments_by_pool_then_application(auth_client):
 
 @pytest.mark.django_db
 def test_index_shows_pool_card_with_utilization(auth_client):
-    p = Pool.objects.create(name="Anycast", cidr="217.61.248.0/23", block_prefix=30)
+    p = Pool.objects.create(name="Anycast", cidr="217.61.248.0/23", )
     a = Application.objects.create(name="X")
     # 16 of 512 IPs = 3.125% utilization
     Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/28")
@@ -53,7 +53,7 @@ def test_index_shows_pool_card_with_utilization(auth_client):
 @pytest.mark.django_db
 def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
     """Pool detail page renders a block grid for IPv4 pools."""
-    p = Pool.objects.create(name="TestPool", cidr="10.0.0.0/28", block_prefix=30)
+    p = Pool.objects.create(name="TestPool", cidr="10.0.0.0/28", )
     a = Application.objects.create(name="Acme")
     Assignment.objects.create(pool=p, application=a, cidr="10.0.0.0/30")
 
@@ -67,8 +67,8 @@ def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
     assert "Acme" in body
     # The assigned CIDR appears
     assert "10.0.0.0/30" in body
-    # Grid is present (grid layout style or class)
-    assert "grid" in body
+    # Flex-wrap layout is present
+    assert "flex flex-wrap" in body or "flex-wrap" in body
     # Free block indicator (German UI uses "frei")
     assert "frei" in body.lower()
 
@@ -76,7 +76,7 @@ def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
 @pytest.mark.django_db
 def test_ipv6_pool_detail_lists_assignments(auth_client):
     """Pool detail page renders a table of assignments for IPv6 pools."""
-    p = Pool.objects.create(name="v6Pool", cidr="2001:db8::/32", block_prefix=48)
+    p = Pool.objects.create(name="v6Pool", cidr="2001:db8::/32")
     a1 = Application.objects.create(name="AlphaNet")
     a2 = Application.objects.create(name="BetaCorp")
     Assignment.objects.create(pool=p, application=a1, cidr="2001:db8:1::/48")
@@ -102,7 +102,7 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
 
 @pytest.mark.django_db
 def test_assignment_new_rejects_overlap(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a1 = Application.objects.create(name="A")
     Application.objects.create(name="B")
     Assignment.objects.create(pool=p, application=a1, cidr="217.61.249.0/30")
@@ -120,7 +120,7 @@ def test_assignment_new_rejects_overlap(auth_client):
 
 @pytest.mark.django_db
 def test_assignment_new_happy_path_redirects(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="A")
 
     response = auth_client.post(f"/pool/{p.id}/assign/new/", {
@@ -135,7 +135,7 @@ def test_assignment_new_happy_path_redirects(auth_client):
 
 @pytest.mark.django_db
 def test_assignment_edit_loads_and_saves(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="A")
     asgn = Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30", notes="old")
 
@@ -155,7 +155,7 @@ def test_assignment_edit_loads_and_saves(auth_client):
 
 @pytest.mark.django_db
 def test_application_list_shows_count(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="BINSS")
     Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30")
     Assignment.objects.create(pool=p, application=a, cidr="217.61.249.4/30")
@@ -169,7 +169,7 @@ def test_application_list_shows_count(auth_client):
 
 @pytest.mark.django_db
 def test_application_detail_lists_assignments(auth_client):
-    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", block_prefix=30)
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="BINSS")
     Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30")
 
@@ -219,24 +219,10 @@ def test_application_edit_loads_and_saves(auth_client):
 
 
 @pytest.mark.django_db
-def test_pool_new_ipv4_requires_block_prefix(auth_client):
-    response = auth_client.post("/pool/new/", {
-        "name": "P",
-        "cidr": "10.0.0.0/24",
-        "block_prefix": "",
-        "notes": "",
-    })
-    body = response.content.decode()
-    assert response.status_code == 200  # form re-rendered
-    assert "erforderlich" in body.lower() or "required" in body.lower()
-
-
-@pytest.mark.django_db
 def test_pool_new_ipv4_happy_path(auth_client):
     response = auth_client.post("/pool/new/", {
         "name": "P",
         "cidr": "10.0.0.0/24",
-        "block_prefix": "28",
         "notes": "",
     })
     assert response.status_code == 302
@@ -248,29 +234,25 @@ def test_pool_new_ipv6_happy_path(auth_client):
     response = auth_client.post("/pool/new/", {
         "name": "P6",
         "cidr": "2001:db8::/32",
-        "block_prefix": "",
         "notes": "",
     })
     assert response.status_code == 302
     p = Pool.objects.get(cidr="2001:db8::/32")
     assert p.ip_version == 6
-    assert p.block_prefix is None
 
 
 @pytest.mark.django_db
 def test_pool_edit_loads_and_saves(auth_client):
-    p = Pool.objects.create(name="Old", cidr="10.1.0.0/24", block_prefix=28)
+    p = Pool.objects.create(name="Old", cidr="10.1.0.0/24")
     response = auth_client.get(f"/pool/{p.id}/edit/")
     assert response.status_code == 200
 
     response = auth_client.post(f"/pool/{p.id}/edit/", {
         "name": "NewName",
         "cidr": "10.1.0.0/24",
-        "block_prefix": "29",
         "notes": "edited",
     })
     assert response.status_code == 302
     p.refresh_from_db()
     assert p.name == "NewName"
-    assert p.block_prefix == 29
     assert p.notes == "edited"

@@ -69,22 +69,5 @@ class AssignmentForm(forms.ModelForm):
 class PoolForm(forms.ModelForm):
     class Meta:
         model = Pool
-        fields = ["name", "cidr", "block_prefix", "notes"]
+        fields = ["name", "cidr", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
-        help_texts = {
-            "block_prefix": "Nur für IPv4 — Auflösung der Blockansicht (z.B. 30). Bei IPv6 leer lassen.",
-        }
-
-    def clean(self):
-        data = super().clean()
-        cidr = data.get("cidr")
-        bp = data.get("block_prefix")
-        if cidr is not None:
-            version = IPNetwork(str(cidr)).version
-            if version == 4 and not bp:
-                raise ValidationError(
-                    {"block_prefix": "Bei IPv4 erforderlich (z.B. 30)."}
-                )
-            if version == 6 and bp:
-                data["block_prefix"] = None
-        return data

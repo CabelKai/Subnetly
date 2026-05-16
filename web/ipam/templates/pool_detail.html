@@ -20,33 +20,31 @@
 </div>
 
 {% if pool.ip_version == 4 %}
-    <div class="mb-3 flex gap-4 text-xs text-slate-500">
-        <span>{{ total_cells }} Zellen &middot; {{ cells_per_row }} pro Zeile</span>
-    </div>
-    <div class="grid gap-1"
-         style="grid-template-columns: repeat({{ cells_per_row }}, minmax(0, 1fr));">
+    <div class="flex flex-wrap gap-2">
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
-                <div class="group relative rounded p-1 text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                     style="grid-column: span {{ b.span }}; background-color: {{ b.color }};">
+                <div class="group relative rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                     style="flex: {{ b.flex_grow }} 0 auto; min-width: max-content; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
-                       class="block w-full h-full no-underline text-slate-900">
-                        <span class="font-semibold truncate block">{{ b.application.name }}</span>
-                        <span class="font-mono truncate block">{{ b.cidr }}</span>
+                       class="block no-underline text-slate-900">
+                        <span class="font-semibold block">{{ b.application.name }}</span>
+                        <span class="font-mono block">{{ b.cidr }}</span>
                     </a>
                     {% cidr_tooltip_panel b.cidr %}
                 </div>
             {% else %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
-                   class="group relative block rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 no-underline"
-                   style="grid-column: span {{ b.span }};">
-                    <span class="font-mono truncate block">frei</span>
-                    <span class="font-mono truncate block">{{ b.size }} IPs</span>
+                   class="group relative block rounded border border-dashed border-slate-300 bg-slate-50 p-2 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 no-underline"
+                   style="flex: {{ b.flex_grow }} 0 auto; min-width: max-content;">
+                    <span class="block">frei</span>
+                    <span class="font-mono block">{{ b.size }} IPs</span>
                     {% free_suggestions_tooltip_panel b.suggestions b.size %}
                 </a>
             {% endif %}
         {% endfor %}
     </div>
+
+    <p class="mt-2 text-xs text-slate-400">{{ blocks|length }} Blöcke</p>
 
 {% else %}
     <table class="w-full text-sm border-collapse">

@@ -9,11 +9,6 @@ class Pool(models.Model):
     name = models.CharField(max_length=100)
     cidr = CidrAddressField(unique=True)
     ip_version = models.PositiveSmallIntegerField(editable=False)
-    block_prefix = models.PositiveSmallIntegerField(
-        null=True,
-        blank=True,
-        help_text="IPv4 only: prefix length of one grid cell, e.g. 30",
-    )
     notes = models.TextField(blank=True)
 
     objects = NetManager()
