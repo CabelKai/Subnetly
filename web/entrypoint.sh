@@ -2,7 +2,13 @@
 set -euo pipefail
 
 echo "[entrypoint] waiting for database..."
+RETRIES=60
 until python -c "import psycopg; psycopg.connect(host='${DB_HOST}', port='${DB_PORT}', user='${DB_USER}', password='${DB_PASSWORD}', dbname='${DB_NAME}')" 2>/dev/null; do
+  RETRIES=$((RETRIES - 1))
+  if [ "$RETRIES" -le 0 ]; then
+    echo "[entrypoint] ERROR: could not connect to database after 60 attempts" >&2
+    exit 1
+  fi
   sleep 1
 done
 
