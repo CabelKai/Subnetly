@@ -52,3 +52,20 @@ def test_assignment_orders_by_cidr(pool_v4):
     Assignment.objects.create(pool=pool_v4, customer=c, cidr="217.61.249.0/28")
     cidrs = [str(a.cidr) for a in pool_v4.assignments.all()]
     assert cidrs == ["217.61.249.0/28", "217.61.249.16/28"]
+
+
+@pytest.mark.django_db
+def test_assignment_must_be_inside_pool(pool_v4):
+    c = Customer.objects.create(name="Outsider")
+    a = Assignment(pool=pool_v4, customer=c, cidr="10.0.0.0/24")
+    with pytest.raises(ValidationError) as exc:
+        a.full_clean()
+    assert "innerhalb" in str(exc.value).lower() or "inside" in str(exc.value).lower()
+
+
+@pytest.mark.django_db
+def test_assignment_ip_family_must_match_pool(pool_v4):
+    c = Customer.objects.create(name="V6User")
+    a = Assignment(pool=pool_v4, customer=c, cidr="2a05:ed80:100:1::/64")
+    with pytest.raises(ValidationError):
+        a.full_clean()

@@ -1,5 +1,6 @@
 import ipaddress
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from netfields import CidrAddressField, NetManager
 
@@ -44,7 +45,6 @@ class Customer(models.Model):
 
 
 class Assignment(models.Model):
-    # Full definition in Task 7
     pool = models.ForeignKey(Pool, on_delete=models.PROTECT, related_name="assignments")
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="assignments")
     cidr = CidrAddressField()
@@ -55,3 +55,22 @@ class Assignment(models.Model):
 
     class Meta:
         ordering = ["cidr"]
+
+    def clean(self):
+        super().clean()
+        if not self.pool_id or self.cidr is None:
+            return
+        from netaddr import IPNetwork
+        pool_net = IPNetwork(str(self.pool.cidr))
+        ass_net = IPNetwork(str(self.cidr))
+        if pool_net.version != ass_net.version:
+            raise ValidationError(
+                {"cidr": f"IP-Familie passt nicht zum Pool (Pool ist IPv{pool_net.version})."}
+            )
+        if ass_net not in pool_net:
+            raise ValidationError(
+                {"cidr": f"{self.cidr} liegt nicht innerhalb des Pools {self.pool.cidr}."}
+            )
+
+    def __str__(self):
+        return f"{self.cidr} → {self.customer.name}"
