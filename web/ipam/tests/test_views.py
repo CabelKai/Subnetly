@@ -69,8 +69,8 @@ def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
     assert "10.0.0.0/30" in body
     # Grid is present (grid layout style or class)
     assert "grid" in body
-    # Free block indicator
-    assert "free" in body.lower()
+    # Free block indicator (German UI uses "frei")
+    assert "frei" in body.lower()
 
 
 @pytest.mark.django_db

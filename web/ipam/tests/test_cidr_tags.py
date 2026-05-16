@@ -97,3 +97,26 @@ def test_panel_ipv6_returns_only_inner_span():
 def test_panel_invalid_returns_empty_string():
     out = render_panel("not-a-cidr")
     assert out == ""
+
+
+def render_free_panel(suggestions, size):
+    t = Template("{% load cidr_tags %}{% free_suggestions_tooltip_panel suggestions size %}")
+    return t.render(Context({"suggestions": suggestions, "size": size}))
+
+
+def test_free_suggestions_panel_renders_list():
+    sugs = [
+        {"prefix": 23, "network": "45.151.170.0", "size": 512, "cidr": "45.151.170.0/23"},
+        {"prefix": 24, "network": "45.151.169.0", "size": 256, "cidr": "45.151.169.0/24"},
+    ]
+    out = render_free_panel(sugs, 1020)
+    assert "Frei" in out
+    assert "1020 IPs" in out
+    assert "Vorschläge" in out
+    assert "/23" in out and "45.151.170.0" in out and "512 IPs" in out
+    assert "/24" in out and "45.151.169.0" in out and "256 IPs" in out
+    assert "group-hover:visible" in out
+
+
+def test_free_suggestions_panel_empty_returns_empty():
+    assert render_free_panel([], 0) == ""

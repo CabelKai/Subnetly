@@ -37,12 +37,12 @@
                     {% cidr_tooltip_panel b.cidr %}
                 </div>
             {% else %}
-                <a href="{% url 'ipam:assignment_new' pool.id %}?cidr={{ b.cidr }}"
+                <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
                    class="group relative block rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 no-underline"
                    style="grid-column: span {{ b.span }};">
-                    <span class="font-mono truncate block">free</span>
-                    <span class="font-mono truncate block">{{ b.cidr }}</span>
-                    {% cidr_tooltip_panel b.cidr %}
+                    <span class="font-mono truncate block">frei</span>
+                    <span class="font-mono truncate block">{{ b.size }} IPs</span>
+                    {% free_suggestions_tooltip_panel b.suggestions b.size %}
                 </a>
             {% endif %}
         {% endfor %}

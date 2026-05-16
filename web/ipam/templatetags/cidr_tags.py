@@ -67,3 +67,26 @@ def cidr_tooltip_panel(cidr):
     if lines is None:
         return ""
     return mark_safe(_panel_html(lines))
+
+
+@register.simple_tag
+def free_suggestions_tooltip_panel(suggestions, size):
+    """Render the tooltip panel for a free grid block, listing aligned-subnet suggestions."""
+    if not suggestions:
+        return ""
+    lines = [f"<span class='inline-block w-28'>Frei:</span>{escape(str(size))} IPs"]
+    lines.append("<span class='block mt-2 mb-1 text-slate-400'>Vorschläge:</span>")
+    for s in suggestions:
+        lines.append(
+            f"<span class='inline-block w-12 text-slate-300'>/{escape(str(s['prefix']))}</span>"
+            f"<span class='inline-block w-44'>ab {escape(str(s['network']))}</span>"
+            f"({escape(str(s['size']))} IPs)"
+        )
+    body = "<br>".join(lines)
+    return mark_safe(
+        '<span class="invisible group-hover:visible absolute bottom-full left-0 mb-1 '
+        'px-3 py-2 bg-slate-900 text-white text-xs font-mono rounded shadow-lg '
+        'whitespace-nowrap z-50 normal-case font-normal pointer-events-none">'
+        f'{body}'
+        '</span>'
+    )
