@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
 
 from .forms import AssignmentForm
-from .models import Assignment, Customer, Pool
+from .models import Application, Assignment, Pool
 from .services.blocks import compute_blocks
 from .services.colors import color_for
 
@@ -36,22 +36,22 @@ def pool_detail(request, pool_id):
 
     if pool.ip_version == 4:
         pool_net = IPNetwork(str(pool.cidr))
-        db_assignments = list(pool.assignments.select_related("customer").all())
+        db_assignments = list(pool.assignments.select_related("application").all())
         assignments = [
-            {"cidr": IPNetwork(str(a.cidr)), "label": a.customer.name}
+            {"cidr": IPNetwork(str(a.cidr)), "label": a.application.name}
             for a in db_assignments
         ]
         blocks = compute_blocks(pool_net, assignments, block_prefix=pool.block_prefix)
 
-        # Augment assigned blocks with color / customer / ORM obj
+        # Augment assigned blocks with color / application / ORM obj
         for b in blocks:
             if b["kind"] == "assigned":
                 db_a = next(
                     a for a in db_assignments
                     if IPNetwork(str(a.cidr)) == b["cidr"]
                 )
-                b["color"] = color_for(db_a.customer.name)
-                b["customer"] = db_a.customer
+                b["color"] = color_for(db_a.application.name)
+                b["application"] = db_a.application
                 b["obj"] = db_a
 
         # Grid geometry: total cells = pool size / cell size
@@ -70,7 +70,7 @@ def pool_detail(request, pool_id):
         }
     else:
         db_assignments = list(
-            pool.assignments.select_related("customer").order_by("cidr")
+            pool.assignments.select_related("application").order_by("cidr")
         )
         context = {
             "pool": pool,
@@ -114,17 +114,17 @@ def assignment_edit(request, assignment_id):
 
 
 @login_required
-def customer_list(request):
-    customers = Customer.objects.annotate(
+def application_list(request):
+    applications = Application.objects.annotate(
         n_assignments=Count("assignments")
     ).order_by("name")
-    return render(request, "customer_list.html", {"customers": customers})
+    return render(request, "application_list.html", {"applications": applications})
 
 
 @login_required
-def customer_detail(request, customer_id):
-    customer = get_object_or_404(Customer, pk=customer_id)
-    assignments = customer.assignments.select_related("pool").order_by("pool__cidr", "cidr")
-    return render(request, "customer_detail.html", {
-        "customer": customer, "assignments": assignments,
+def application_detail(request, application_id):
+    application = get_object_or_404(Application, pk=application_id)
+    assignments = application.assignments.select_related("pool").order_by("pool__cidr", "cidr")
+    return render(request, "application_detail.html", {
+        "application": application, "assignments": assignments,
     })

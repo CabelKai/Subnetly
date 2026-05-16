@@ -33,12 +33,14 @@ class Pool(models.Model):
         return f"{self.name} ({self.cidr})"
 
 
-class Customer(models.Model):
+class Application(models.Model):
     name = models.CharField(max_length=100, unique=True)
     notes = models.TextField(blank=True)
 
     class Meta:
         ordering = ["name"]
+        verbose_name = "Anwendung"
+        verbose_name_plural = "Anwendungen"
 
     def __str__(self):
         return self.name
@@ -46,7 +48,7 @@ class Customer(models.Model):
 
 class Assignment(models.Model):
     pool = models.ForeignKey(Pool, on_delete=models.PROTECT, related_name="assignments")
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="assignments")
+    application = models.ForeignKey(Application, on_delete=models.PROTECT, related_name="assignments")
     cidr = CidrAddressField()
     gateway = models.GenericIPAddressField(null=True, blank=True)
     notes = models.TextField(blank=True)
@@ -73,4 +75,4 @@ class Assignment(models.Model):
             )
 
     def __str__(self):
-        return f"{self.cidr} → {self.customer.name}"
+        return f"{self.cidr} → {self.application.name}"

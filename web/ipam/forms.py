@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from netaddr import IPNetwork
 
-from .models import Assignment, Customer
+from .models import Application, Assignment
 
 
 class AssignmentForm(forms.ModelForm):
@@ -10,7 +10,7 @@ class AssignmentForm(forms.ModelForm):
 
     class Meta:
         model = Assignment
-        fields = ["customer", "cidr", "gateway", "notes"]
+        fields = ["application", "cidr", "gateway", "notes"]
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
@@ -52,7 +52,7 @@ class AssignmentForm(forms.ModelForm):
                 raise ValidationError(
                     {
                         "cidr": (
-                            f"Überschneidung mit {other.cidr} ({other.customer.name})."
+                            f"Überschneidung mit {other.cidr} ({other.application.name})."
                         )
                     }
                 )

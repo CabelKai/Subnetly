@@ -32,7 +32,7 @@ _COMMA_TAIL = re.compile(r"((?:\d{1,3}\.){3})(\d{1,3})\s*,\s*(\d{1,3}(?:\s*,\s*\
 def parse(text: str) -> List[dict]:
     """Parse a dokuwiki-style IP allocation text.
 
-    Returns a list of {customer, cidr, notes} dicts.
+    Returns a list of {application, cidr, notes} dicts.
     """
     results: List[dict] = []
     current = None
@@ -58,7 +58,7 @@ def parse(text: str) -> List[dict]:
             rest = [x.strip() for x in cm.group(3).split(",") if x.strip()]
             for octet in [first, *rest]:
                 results.append({
-                    "customer": current,
+                    "application": current,
                     "cidr": f"{prefix}{octet}/32",
                     "notes": "",
                 })
@@ -72,7 +72,7 @@ def parse(text: str) -> List[dict]:
             # DB layer will accept; if the address is not the network address
             # netaddr will still parse, and the DB stores the network part.
             note = _extract_note(line, cm.span())
-            results.append({"customer": current, "cidr": cidr, "notes": note})
+            results.append({"application": current, "cidr": cidr, "notes": note})
             found_any = True
         if found_any:
             continue
@@ -81,7 +81,7 @@ def parse(text: str) -> List[dict]:
         for cm in _BARE_V4.finditer(line):
             ip = cm.group(1)
             note = _extract_note(line, cm.span())
-            results.append({"customer": current, "cidr": f"{ip}/32", "notes": note})
+            results.append({"application": current, "cidr": f"{ip}/32", "notes": note})
 
     return results
 

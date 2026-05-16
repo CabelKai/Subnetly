@@ -6,7 +6,7 @@ from .models import Assignment, Pool
 
 
 @dataclass
-class _CustomerNode:
+class _ApplicationNode:
     name: str
     id: int = 0
     assignments: List[Assignment] = field(default_factory=list)
@@ -18,7 +18,7 @@ class _PoolNode:
     name: str
     id: int
     ip_version: int
-    customers: List[_CustomerNode] = field(default_factory=list)
+    applications: List[_ApplicationNode] = field(default_factory=list)
 
 
 def sidebar_tree(request):
@@ -28,8 +28,8 @@ def sidebar_tree(request):
     pools = list(Pool.objects.all())
     assignments = (
         Assignment.objects
-        .select_related("pool", "customer")
-        .order_by("pool__cidr", "customer__name", "cidr")
+        .select_related("pool", "application")
+        .order_by("pool__cidr", "application__name", "cidr")
     )
 
     by_pool = OrderedDict()
@@ -40,8 +40,8 @@ def sidebar_tree(request):
 
     for a in assignments:
         pool_node = by_pool[a.pool_id]
-        if not pool_node.customers or pool_node.customers[-1].name != a.customer.name:
-            pool_node.customers.append(_CustomerNode(name=a.customer.name, id=a.customer.id))
-        pool_node.customers[-1].assignments.append(a)
+        if not pool_node.applications or pool_node.applications[-1].name != a.application.name:
+            pool_node.applications.append(_ApplicationNode(name=a.application.name, id=a.application.id))
+        pool_node.applications[-1].assignments.append(a)
 
     return {"sidebar_pools": list(by_pool.values())}

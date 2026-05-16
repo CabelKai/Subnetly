@@ -4,10 +4,10 @@
             <a href="{% url 'ipam:pool_detail' pool.id %}" class="font-mono hover:underline">{{ pool.cidr }}</a>
         </summary>
         <div class="pl-3 mt-1">
-            {% for c in pool.customers %}
+            {% for c in pool.applications %}
                 <details class="mb-1">
                     <summary class="cursor-pointer">
-                        <a href="{% url 'ipam:customer_detail' c.id %}" class="hover:underline">{{ c.name }}</a>
+                        <a href="{% url 'ipam:application_detail' c.id %}" class="hover:underline">{{ c.name }}</a>
                     </summary>
                     <ul class="pl-4 mt-1 text-xs font-mono text-slate-600">
                         {% for a in c.assignments %}

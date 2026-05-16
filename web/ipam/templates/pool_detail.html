@@ -24,10 +24,10 @@
             {% if b.kind == "assigned" %}
                 <div class="rounded p-1 text-xs overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                      style="grid-column: span {{ b.span }}; background-color: {{ b.color }};"
-                     title="{{ b.cidr }} – {{ b.customer.name }}">
+                     title="{{ b.cidr }} – {{ b.application.name }}">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
                        class="block w-full h-full no-underline text-slate-900">
-                        <span class="font-semibold truncate block">{{ b.customer.name }}</span>
+                        <span class="font-semibold truncate block">{{ b.application.name }}</span>
                         <span class="font-mono truncate block">{{ b.cidr }}</span>
                     </a>
                 </div>
@@ -54,7 +54,7 @@
         <thead>
             <tr class="bg-slate-100 text-slate-600 text-left">
                 <th class="px-3 py-2 font-semibold">CIDR</th>
-                <th class="px-3 py-2 font-semibold">Kunde</th>
+                <th class="px-3 py-2 font-semibold">Anwendung</th>
                 <th class="px-3 py-2 font-semibold">Aktion</th>
             </tr>
         </thead>
@@ -62,7 +62,7 @@
             {% for row in v6_rows %}
             <tr class="border-t border-slate-200 hover:bg-slate-50">
                 <td class="px-3 py-2 font-mono">{{ row.cidr }}</td>
-                <td class="px-3 py-2">{{ row.customer.name }}</td>
+                <td class="px-3 py-2">{{ row.application.name }}</td>
                 <td class="px-3 py-2">
                     <a href="{% url 'ipam:assignment_edit' row.id %}"
                        class="text-blue-600 hover:underline text-xs">Bearbeiten</a>

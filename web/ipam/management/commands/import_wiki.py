@@ -7,12 +7,12 @@ from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from netaddr import IPNetwork
 
-from ipam.models import Assignment, Customer, Pool
+from ipam.models import Application, Assignment, Pool
 from ipam.services.wiki_parser import parse
 
 
 class Command(BaseCommand):
-    help = "Parse a wiki dump and import customers + assignments."
+    help = "Parse a wiki dump and import applications + assignments."
 
     def add_arguments(self, parser):
         parser.add_argument("path", help="Path to the wiki text file")
@@ -34,33 +34,33 @@ class Command(BaseCommand):
         logger.setLevel(logging.INFO)
 
         pools = list(Pool.objects.all())
-        customers_new = 0
-        customers_existing = 0
+        applications_new = 0
+        applications_existing = 0
         assignments_new = 0
         assignments_existing = 0
         skipped = 0
 
         for entry in entries:
-            cust_name = entry["customer"]
+            app_name = entry["application"]
             cidr_str = entry["cidr"]
             notes = entry["notes"]
 
-            customer, created = Customer.objects.get_or_create(name=cust_name)
+            application, created = Application.objects.get_or_create(name=app_name)
             if created:
-                customers_new += 1
+                applications_new += 1
             else:
-                customers_existing += 1
+                applications_existing += 1
 
             try:
                 ipnet = IPNetwork(cidr_str)
             except Exception as e:
-                logger.warning(f"SKIP unparseable CIDR '{cidr_str}' ({cust_name}): {e}")
+                logger.warning(f"SKIP unparseable CIDR '{cidr_str}' ({app_name}): {e}")
                 skipped += 1
                 continue
 
             pool = _smallest_containing_pool(pools, ipnet)
             if pool is None:
-                logger.warning(f"SKIP no matching pool for {cidr_str} ({cust_name})")
+                logger.warning(f"SKIP no matching pool for {cidr_str} ({app_name})")
                 skipped += 1
                 continue
 
@@ -68,19 +68,19 @@ class Command(BaseCommand):
                 assignments_existing += 1
                 continue
 
-            a = Assignment(pool=pool, customer=customer, cidr=str(ipnet.cidr), notes=notes)
+            a = Assignment(pool=pool, application=application, cidr=str(ipnet.cidr), notes=notes)
             try:
                 a.full_clean()
                 with transaction.atomic():
                     a.save()
                 assignments_new += 1
             except (ValidationError, IntegrityError) as e:
-                logger.warning(f"SKIP {cidr_str} ({cust_name}): {e}")
+                logger.warning(f"SKIP {cidr_str} ({app_name}): {e}")
                 skipped += 1
 
         self.stdout.write(
-            f"Customers angelegt:   {customers_new}\n"
-            f"Customers vorhanden:  {customers_existing}\n"
+            f"Anwendungen angelegt:   {applications_new}\n"
+            f"Anwendungen vorhanden:  {applications_existing}\n"
             f"Assignments angelegt: {assignments_new}\n"
             f"Assignments vorhanden:{assignments_existing}\n"
             f"Übersprungen:         {skipped}  (siehe {log_path})\n"

@@ -10,7 +10,7 @@ _PALETTE = [
 
 
 def color_for(name: str) -> str:
-    """Stable color hex for a customer name."""
+    """Stable color hex for an application name."""
     if not name:
         return "#E5E7EB"
     h = hashlib.md5(name.encode("utf-8")).digest()
