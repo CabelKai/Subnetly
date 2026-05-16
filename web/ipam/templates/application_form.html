@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Anwendung{% endblock %}
+{% block content %}
+<div class="max-w-xl bg-white p-6 rounded shadow">
+    <h1 class="text-xl font-semibold mb-4">
+        {% if mode == "new" %}Neue Anwendung{% else %}Anwendung bearbeiten{% endif %}
+    </h1>
+    {% if form.non_field_errors %}
+        <div class="mb-3 text-red-700 text-sm">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label class="block text-sm mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<p class="text-sm text-red-600 mt-1">{{ field.errors|join:" " }}</p>{% endif %}
+        </div>
+        {% endfor %}
+        <div class="flex gap-2">
+            <button class="bg-slate-800 text-white px-4 py-2 rounded">Speichern</button>
+            <a href="{% url 'ipam:application_list' %}" class="px-4 py-2 rounded border">Abbrechen</a>
+        </div>
+    </form>
+</div>
+<style>
+    input[type=text], input[type=number], select, textarea {
+        border: 1px solid rgb(203 213 225);
+        border-radius: 0.25rem;
+        width: 100%;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}

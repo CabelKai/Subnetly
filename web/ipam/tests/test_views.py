@@ -178,3 +178,41 @@ def test_application_detail_lists_assignments(auth_client):
     assert response.status_code == 200
     assert "BINSS" in body
     assert "217.61.249.0/30" in body
+
+
+@pytest.mark.django_db
+def test_application_new_creates_and_redirects(auth_client):
+    response = auth_client.post("/anwendung/new/", {
+        "name": "NeueApp",
+        "notes": "Hallo",
+    })
+    assert response.status_code == 302
+    assert Application.objects.filter(name="NeueApp").exists()
+
+
+@pytest.mark.django_db
+def test_application_new_rejects_duplicate_name(auth_client):
+    Application.objects.create(name="Dup")
+    response = auth_client.post("/anwendung/new/", {
+        "name": "Dup",
+        "notes": "",
+    })
+    body = response.content.decode()
+    assert response.status_code == 200  # form re-rendered
+    assert "bereits" in body.lower() or "already" in body.lower()
+
+
+@pytest.mark.django_db
+def test_application_edit_loads_and_saves(auth_client):
+    a = Application.objects.create(name="OldName", notes="old")
+    response = auth_client.get(f"/anwendung/{a.id}/edit/")
+    assert response.status_code == 200
+
+    response = auth_client.post(f"/anwendung/{a.id}/edit/", {
+        "name": "NewName",
+        "notes": "new",
+    })
+    assert response.status_code == 302
+    a.refresh_from_db()
+    assert a.name == "NewName"
+    assert a.notes == "new"

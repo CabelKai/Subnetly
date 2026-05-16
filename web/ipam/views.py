@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
 
-from .forms import AssignmentForm
+from .forms import ApplicationForm, AssignmentForm
 from .models import Application, Assignment, Pool
 from .services.blocks import compute_blocks
 from .services.colors import color_for
@@ -128,3 +128,28 @@ def application_detail(request, application_id):
     return render(request, "application_detail.html", {
         "application": application, "assignments": assignments,
     })
+
+
+@login_required
+def application_new(request):
+    if request.method == "POST":
+        form = ApplicationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("ipam:application_list")
+    else:
+        form = ApplicationForm()
+    return render(request, "application_form.html", {"form": form, "mode": "new"})
+
+
+@login_required
+def application_edit(request, application_id):
+    app = get_object_or_404(Application, pk=application_id)
+    if request.method == "POST":
+        form = ApplicationForm(request.POST, instance=app)
+        if form.is_valid():
+            form.save()
+            return redirect("ipam:application_detail", application_id=app.id)
+    else:
+        form = ApplicationForm(instance=app)
+    return render(request, "application_form.html", {"form": form, "mode": "edit", "obj": app})

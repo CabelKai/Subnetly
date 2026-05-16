@@ -11,4 +11,6 @@ urlpatterns = [
     path("assignment/<int:assignment_id>/edit/", views.assignment_edit, name="assignment_edit"),
     path("anwendungen/", views.application_list, name="application_list"),
     path("anwendung/<int:application_id>/", views.application_detail, name="application_detail"),
+    path("anwendung/new/", views.application_new, name="application_new"),
+    path("anwendung/<int:application_id>/edit/", views.application_edit, name="application_edit"),
 ]
