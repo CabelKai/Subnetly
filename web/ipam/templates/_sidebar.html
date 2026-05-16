@@ -1,13 +1,17 @@
 {% for pool in sidebar_pools %}
     <details class="mb-2" open>
-        <summary class="cursor-pointer font-mono">{{ pool.cidr }}</summary>
+        <summary class="cursor-pointer">
+            <a href="{% url 'ipam:pool_detail' pool.id %}" class="font-mono hover:underline">{{ pool.cidr }}</a>
+        </summary>
         <div class="pl-3 mt-1">
             {% for c in pool.customers %}
                 <details class="mb-1">
-                    <summary class="cursor-pointer">{{ c.name }}</summary>
+                    <summary class="cursor-pointer">
+                        <a href="{% url 'ipam:customer_detail' c.id %}" class="hover:underline">{{ c.name }}</a>
+                    </summary>
                     <ul class="pl-4 mt-1 text-xs font-mono text-slate-600">
                         {% for a in c.assignments %}
-                            <li>{{ a.cidr }}</li>
+                            <li><a href="{% url 'ipam:pool_detail' a.pool_id %}#a{{ a.id }}" class="hover:underline">{{ a.cidr }}</a></li>
                         {% endfor %}
                     </ul>
                 </details>

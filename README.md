@@ -46,7 +46,7 @@ Container `backup` dumpt täglich um 02:30 nach Volume `db_backups`
 Restore:
 
 ```bash
-docker compose exec -T db pg_restore -U "${DB_USER}" -d "${DB_NAME}" < dump.sql
+gunzip -c subnetly_<ts>.sql.gz | docker compose exec -T db psql -U "${DB_USER}" -d "${DB_NAME}"
 ```
 
 ## Tests

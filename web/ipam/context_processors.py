@@ -8,6 +8,7 @@ from .models import Assignment, Pool
 @dataclass
 class _CustomerNode:
     name: str
+    id: int = 0
     assignments: List[Assignment] = field(default_factory=list)
 
 
@@ -40,7 +41,7 @@ def sidebar_tree(request):
     for a in assignments:
         pool_node = by_pool[a.pool_id]
         if not pool_node.customers or pool_node.customers[-1].name != a.customer.name:
-            pool_node.customers.append(_CustomerNode(name=a.customer.name))
+            pool_node.customers.append(_CustomerNode(name=a.customer.name, id=a.customer.id))
         pool_node.customers[-1].assignments.append(a)
 
     return {"sidebar_pools": list(by_pool.values())}

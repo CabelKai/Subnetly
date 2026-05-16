@@ -32,12 +32,13 @@
                     </a>
                 </div>
             {% else %}
-                <div class="rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 overflow-hidden"
-                     style="grid-column: span {{ b.span }};"
-                     title="Frei: {{ b.cidr }}">
+                <a href="{% url 'ipam:assignment_new' pool.id %}?cidr={{ b.cidr }}"
+                   class="block rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 hover:bg-slate-100 hover:border-slate-400 overflow-hidden no-underline"
+                   style="grid-column: span {{ b.span }};"
+                   title="Hier neu zuweisen: {{ b.cidr }}">
                     <span class="font-mono truncate block">free</span>
                     <span class="font-mono truncate block">{{ b.cidr }}</span>
-                </div>
+                </a>
             {% endif %}
         {% endfor %}
     </div>
