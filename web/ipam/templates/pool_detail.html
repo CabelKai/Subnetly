@@ -1,2 +1,48 @@
 {% extends "base.html" %}
-{% block content %}<h1>{{ pool.name }}</h1>{% endblock %}
+{% block title %}{{ pool.name }}{% endblock %}
+{% block content %}
+<div class="mb-4 flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold">{{ pool.name }}</h1>
+        <p class="text-slate-500 font-mono text-sm">{{ pool.cidr }}</p>
+    </div>
+    {% if pool.ip_version == 4 %}
+    <a href="{% url 'ipam:assignment_new' pool.id %}"
+       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+        + Zuweisung
+    </a>
+    {% endif %}
+</div>
+
+{% if pool.ip_version == 4 %}
+    <div class="mb-3 flex gap-4 text-xs text-slate-500">
+        <span>{{ total_cells }} Zellen &middot; {{ cells_per_row }} pro Zeile</span>
+    </div>
+    <div class="grid gap-1"
+         style="grid-template-columns: repeat({{ cells_per_row }}, minmax(0, 1fr));">
+        {% for b in blocks %}
+            {% if b.kind == "assigned" %}
+                <div class="rounded p-1 text-xs overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                     style="grid-column: span {{ b.span }}; background-color: {{ b.color }};"
+                     title="{{ b.cidr }} – {{ b.customer.name }}">
+                    <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
+                       class="block w-full h-full no-underline text-slate-900">
+                        <span class="font-semibold truncate block">{{ b.customer.name }}</span>
+                        <span class="font-mono truncate block">{{ b.cidr }}</span>
+                    </a>
+                </div>
+            {% else %}
+                <div class="rounded border border-dashed border-slate-300 bg-slate-50 p-1 text-xs text-slate-400 overflow-hidden"
+                     style="grid-column: span {{ b.span }};"
+                     title="Frei: {{ b.cidr }}">
+                    <span class="font-mono truncate block">free</span>
+                    <span class="font-mono truncate block">{{ b.cidr }}</span>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+{% else %}
+    <p class="text-slate-500 italic">IPv6-Ansicht folgt.</p>
+{% endif %}
+{% endblock %}
