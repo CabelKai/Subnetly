@@ -1,0 +1,19 @@
+{% for pool in sidebar_pools %}
+    <details class="mb-2" open>
+        <summary class="cursor-pointer font-mono">{{ pool.cidr }}</summary>
+        <div class="pl-3 mt-1">
+            {% for c in pool.customers %}
+                <details class="mb-1">
+                    <summary class="cursor-pointer">{{ c.name }}</summary>
+                    <ul class="pl-4 mt-1 text-xs font-mono text-slate-600">
+                        {% for a in c.assignments %}
+                            <li>{{ a.cidr }}</li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            {% endfor %}
+        </div>
+    </details>
+{% empty %}
+    <p class="text-slate-500 italic">Noch keine Pools angelegt.</p>
+{% endfor %}
