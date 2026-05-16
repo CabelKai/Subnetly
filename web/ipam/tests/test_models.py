@@ -20,3 +20,35 @@ def test_pool_cidr_unique(pool_v4):
     with pytest.raises(IntegrityError):
         with transaction.atomic():
             Pool.objects.create(name="dup", cidr="217.61.248.0/23")
+
+
+@pytest.mark.django_db
+def test_customer_name_unique():
+    Customer.objects.create(name="BINSS")
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            Customer.objects.create(name="BINSS")
+
+
+@pytest.mark.django_db
+def test_assignment_basic_create(pool_v4):
+    c = Customer.objects.create(name="BINSS")
+    a = Assignment.objects.create(
+        pool=pool_v4,
+        customer=c,
+        cidr="217.61.249.0/28",
+        gateway="217.61.249.1",
+        notes="Router .1, Switch .2",
+    )
+    a.refresh_from_db()
+    assert a.cidr.prefixlen == 28
+    assert str(a.gateway) == "217.61.249.1"
+
+
+@pytest.mark.django_db
+def test_assignment_orders_by_cidr(pool_v4):
+    c = Customer.objects.create(name="X")
+    Assignment.objects.create(pool=pool_v4, customer=c, cidr="217.61.249.16/28")
+    Assignment.objects.create(pool=pool_v4, customer=c, cidr="217.61.249.0/28")
+    cidrs = [str(a.cidr) for a in pool_v4.assignments.all()]
+    assert cidrs == ["217.61.249.0/28", "217.61.249.16/28"]
