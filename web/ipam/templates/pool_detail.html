@@ -6,12 +6,16 @@
         <h1 class="text-2xl font-bold">{{ pool.name }}</h1>
         <p class="text-slate-500 font-mono text-sm">{{ pool.cidr }}</p>
     </div>
-    {% if pool.ip_version == 4 %}
-    <a href="{% url 'ipam:assignment_new' pool.id %}"
-       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
-        + Zuweisung
-    </a>
-    {% endif %}
+    <div class="flex gap-2">
+        <a href="{% url 'ipam:pool_edit' pool.id %}"
+           class="bg-slate-200 hover:bg-slate-300 text-slate-900 px-3 py-2 rounded text-sm">
+            Bearbeiten
+        </a>
+        <a href="{% url 'ipam:assignment_new' pool.id %}"
+           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+            + Zuweisung
+        </a>
+    </div>
 </div>
 
 {% if pool.ip_version == 4 %}
@@ -44,12 +48,6 @@
     </div>
 
 {% else %}
-    <div class="mb-4">
-        <a href="{% url 'ipam:assignment_new' pool.id %}"
-           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
-            + Zuweisung
-        </a>
-    </div>
     <table class="w-full text-sm border-collapse">
         <thead>
             <tr class="bg-slate-100 text-slate-600 text-left">
