@@ -1,47 +1,42 @@
 from collections import OrderedDict
-from dataclasses import dataclass, field
-from typing import List
 
-from .models import Assignment, Pool
-
-
-@dataclass
-class _ApplicationNode:
-    name: str
-    id: int = 0
-    assignments: List[Assignment] = field(default_factory=list)
-
-
-@dataclass
-class _PoolNode:
-    cidr: str
-    name: str
-    id: int
-    ip_version: int
-    applications: List[_ApplicationNode] = field(default_factory=list)
+from .models import Application, Assignment, Pool
 
 
 def sidebar_tree(request):
+    """Provide two flat lists for the left sidebar:
+    - sidebar_pools: each pool as a direct link to its detail page (no tree)
+    - sidebar_apps:  each application with its assignments (expandable)
+    """
     if not getattr(request, "user", None) or not request.user.is_authenticated:
-        return {"sidebar_pools": []}
+        return {"sidebar_pools": [], "sidebar_apps": []}
 
-    pools = list(Pool.objects.all())
+    pools = [
+        {"id": p.id, "name": p.name, "cidr": str(p.cidr), "ip_version": p.ip_version}
+        for p in Pool.objects.order_by("cidr")
+    ]
+
     assignments = (
         Assignment.objects
         .select_related("pool", "application")
-        .order_by("pool__cidr", "application__name", "cidr")
+        .order_by("application__name", "cidr")
     )
 
-    by_pool = OrderedDict()
-    for p in pools:
-        by_pool[p.id] = _PoolNode(
-            cidr=str(p.cidr), name=p.name, id=p.id, ip_version=p.ip_version
-        )
-
+    by_app = OrderedDict()
     for a in assignments:
-        pool_node = by_pool[a.pool_id]
-        if not pool_node.applications or pool_node.applications[-1].name != a.application.name:
-            pool_node.applications.append(_ApplicationNode(name=a.application.name, id=a.application.id))
-        pool_node.applications[-1].assignments.append(a)
+        node = by_app.setdefault(a.application_id, {
+            "id": a.application_id,
+            "name": a.application.name,
+            "assignments": [],
+        })
+        node["assignments"].append({
+            "cidr": str(a.cidr),
+            "pool_id": a.pool_id,
+        })
 
-    return {"sidebar_pools": list(by_pool.values())}
+    # Include apps with no assignments at the end so they're discoverable.
+    apps_with_assignments = set(by_app.keys())
+    for app in Application.objects.exclude(id__in=apps_with_assignments).order_by("name"):
+        by_app[app.id] = {"id": app.id, "name": app.name, "assignments": []}
+
+    return {"sidebar_pools": pools, "sidebar_apps": list(by_app.values())}

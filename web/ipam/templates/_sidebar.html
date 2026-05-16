@@ -1,24 +1,40 @@
-{% load cidr_tags %}
-{% for pool in sidebar_pools %}
-    <details class="mb-2" open>
-        <summary class="cursor-pointer">
-            <a href="{% url 'ipam:pool_detail' pool.id %}" class="font-mono hover:underline">{% cidr_tooltip pool.cidr %}</a>
-        </summary>
-        <div class="pl-3 mt-1">
-            {% for c in pool.applications %}
-                <details class="mb-1">
-                    <summary class="cursor-pointer">
-                        <a href="{% url 'ipam:application_detail' c.id %}" class="hover:underline">{{ c.name }}</a>
-                    </summary>
-                    <ul class="pl-4 mt-1 text-xs font-mono text-slate-600">
-                        {% for a in c.assignments %}
-                            <li><a href="{% url 'ipam:pool_detail' a.pool_id %}#a{{ a.id }}" class="hover:underline">{% cidr_tooltip a.cidr %}</a></li>
-                        {% endfor %}
-                    </ul>
-                </details>
-            {% endfor %}
-        </div>
-    </details>
-{% empty %}
-    <p class="text-slate-500 italic">Noch keine Pools angelegt.</p>
-{% endfor %}
+<div class="mb-5">
+    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">IP-Pools</h3>
+    <ul class="space-y-1">
+        {% for pool in sidebar_pools %}
+            <li>
+                <a href="{% url 'ipam:pool_detail' pool.id %}"
+                   class="font-mono text-sm text-slate-700 hover:text-slate-900 hover:underline">
+                    {{ pool.cidr }}
+                </a>
+            </li>
+        {% empty %}
+            <li class="text-slate-500 italic text-sm">Noch keine Pools angelegt.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div>
+    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Anwendungen</h3>
+    {% for app in sidebar_apps %}
+        <details class="mb-1">
+            <summary class="cursor-pointer text-sm py-0.5">
+                <a href="{% url 'ipam:application_detail' app.id %}" class="text-slate-700 hover:text-slate-900 hover:underline">{{ app.name }}</a>
+            </summary>
+            <ul class="pl-4 mt-1 text-xs font-mono text-slate-600 space-y-0.5">
+                {% for a in app.assignments %}
+                    <li>
+                        <a href="{% url 'ipam:pool_detail' a.pool_id %}"
+                           class="hover:underline hover:text-slate-900">
+                            {{ a.cidr }}
+                        </a>
+                    </li>
+                {% empty %}
+                    <li class="italic text-slate-400">(keine Zuweisungen)</li>
+                {% endfor %}
+            </ul>
+        </details>
+    {% empty %}
+        <p class="text-slate-500 italic text-sm">Noch keine Anwendungen.</p>
+    {% endfor %}
+</div>
