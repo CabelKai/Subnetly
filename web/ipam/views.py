@@ -41,6 +41,10 @@ def _all_app_names(assignment):
     return ", ".join(sorted((a.name for a in assignment.applications.all()), key=str.casefold)) or "—"
 
 
+def _app_name_list(assignment):
+    return sorted((a.name for a in assignment.applications.all()), key=str.casefold)
+
+
 @login_required
 def pool_detail(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id)
@@ -64,6 +68,7 @@ def pool_detail(request, pool_id):
                 first_name = _first_app_name(src)
                 b["color"] = color_map.get(first_name, "#E5E7EB")
                 b["app_names"] = _all_app_names(src)
+                b["app_list"] = _app_name_list(src)
                 b["obj"] = src
             b["width_rem"] = f"{b['size'] * 0.3:.2f}"
 
@@ -78,6 +83,7 @@ def pool_detail(request, pool_id):
                 "id": a.id,
                 "cidr": a.cidr,
                 "app_names": _all_app_names(a),
+                "app_list": _app_name_list(a),
             })
         context = {"pool": pool, "blocks": None, "v6_rows": rows}
 
