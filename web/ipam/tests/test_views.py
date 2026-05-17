@@ -104,7 +104,7 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
     assert "2001:db8:2::/48" in body
     # Rendered as a table (not the "folgt" placeholder)
     assert "IPv6-Ansicht folgt" not in body
-    assert "<table" in body
+    assert "Bearbeiten" in body  # responsive card layout, not table
 
 
 @pytest.mark.django_db

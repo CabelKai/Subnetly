@@ -48,32 +48,32 @@
     <p class="mt-2 text-xs text-slate-400">{{ blocks|length }} Blöcke</p>
 
 {% else %}
-    <table class="w-full text-sm border-collapse">
-        <thead>
-            <tr class="bg-slate-100 text-slate-600 text-left">
-                <th class="px-3 py-2 font-semibold">CIDR</th>
-                <th class="px-3 py-2 font-semibold">Anwendung</th>
-                <th class="px-3 py-2 font-semibold">Aktion</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in v6_rows %}
-            <tr class="border-t border-slate-200 hover:bg-slate-50">
-                <td class="px-3 py-2 font-mono">{% cidr_tooltip row.cidr %}</td>
-                <td class="px-3 py-2">{{ row.app_names }}</td>
-                <td class="px-3 py-2">
-                    <a href="{% url 'ipam:assignment_edit' row.id %}"
-                       class="text-blue-600 hover:underline text-xs">Bearbeiten</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" class="px-3 py-4 text-center text-slate-400 italic">
-                    Keine Zuweisungen vorhanden.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="bg-white rounded shadow overflow-hidden text-sm">
+        <div class="hidden md:grid grid-cols-[1fr_1fr_120px] bg-slate-100 text-slate-600 font-semibold">
+            <div class="px-3 py-2">CIDR</div>
+            <div class="px-3 py-2">Anwendungen</div>
+            <div class="px-3 py-2">Aktion</div>
+        </div>
+        {% for row in v6_rows %}
+        <div class="block md:grid md:grid-cols-[1fr_1fr_120px] border-t p-3 md:p-0 hover:bg-slate-50">
+            <div class="md:px-3 md:py-2 font-mono flex justify-between md:block">
+                <span class="md:hidden text-xs font-semibold text-slate-500">CIDR</span>
+                {% cidr_tooltip row.cidr %}
+            </div>
+            <div class="md:px-3 md:py-2 flex justify-between md:block mt-1 md:mt-0">
+                <span class="md:hidden text-xs font-semibold text-slate-500">Anwendungen</span>
+                <span>{{ row.app_names }}</span>
+            </div>
+            <div class="md:px-3 md:py-2 mt-2 md:mt-0">
+                <a href="{% url 'ipam:assignment_edit' row.id %}"
+                   class="text-blue-600 hover:underline text-xs">Bearbeiten</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="px-3 py-4 text-center text-slate-400 italic">
+            Keine Zuweisungen vorhanden.
+        </div>
+        {% endfor %}
+    </div>
 {% endif %}
 {% endblock %}
