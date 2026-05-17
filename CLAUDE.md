@@ -11,3 +11,8 @@
   ein partieller Unique-Constraint (max. ein Gateway pro Subnet).
 - Subnet-Edit-Seite zeigt vollständige IP-Liste bis 32 IPs (Cut-off in
   `services/ip_list.FULL_LIST_MAX`), darüber sparse.
+- Mobile-Layout: Off-Canvas-Sidebar via Checkbox-Hack (`<input id="nav-toggle">`
+  + `peer-checked/drawer:`-Modifier). Breakpoint `md` (768 px). Tables
+  (Anwendungs-Liste/-Detail, IPv6 pool) und IP-Liste werden auf <md zu
+  Stack-Cards mit Mini-Labels. IPv4-Block-Grid bleibt density-Visualisierung
+  mit horizontalem Scroll.
