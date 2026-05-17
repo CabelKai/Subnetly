@@ -4,9 +4,10 @@ from .models import Application, Assignment, Pool
 
 
 def sidebar_tree(request):
-    """Provide two flat lists for the left sidebar:
-    - sidebar_pools: each pool as a direct link to its detail page (no tree)
-    - sidebar_apps:  each application with its assignments (expandable)
+    """Two flat lists for the left sidebar:
+    - sidebar_pools: flat list of pools.
+    - sidebar_apps:  each application with its assignments (expandable). With
+                     M2M, one assignment may appear under multiple applications.
     """
     if not getattr(request, "user", None) or not request.user.is_authenticated:
         return {"sidebar_pools": [], "sidebar_apps": []}
@@ -18,25 +19,27 @@ def sidebar_tree(request):
 
     assignments = (
         Assignment.objects
-        .select_related("pool", "application")
-        .order_by("application__name", "cidr")
+        .select_related("pool")
+        .prefetch_related("applications")
+        .order_by("cidr")
     )
 
     by_app = OrderedDict()
     for a in assignments:
-        node = by_app.setdefault(a.application_id, {
-            "id": a.application_id,
-            "name": a.application.name,
-            "assignments": [],
-        })
-        node["assignments"].append({
-            "cidr": str(a.cidr),
-            "pool_id": a.pool_id,
-        })
+        for app in a.applications.all():
+            node = by_app.setdefault(app.id, {
+                "id": app.id,
+                "name": app.name,
+                "assignments": [],
+            })
+            node["assignments"].append({
+                "cidr": str(a.cidr),
+                "pool_id": a.pool_id,
+            })
 
-    # Include apps with no assignments at the end so they're discoverable.
     apps_with_assignments = set(by_app.keys())
     for app in Application.objects.exclude(id__in=apps_with_assignments).order_by("name"):
         by_app[app.id] = {"id": app.id, "name": app.name, "assignments": []}
 
-    return {"sidebar_pools": pools, "sidebar_apps": list(by_app.values())}
+    sorted_nodes = sorted(by_app.values(), key=lambda n: n["name"].casefold())
+    return {"sidebar_pools": pools, "sidebar_apps": sorted_nodes}
