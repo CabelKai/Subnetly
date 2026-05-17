@@ -17,16 +17,18 @@ class AssignmentForm(forms.ModelForm):
 
     class Meta:
         model = Assignment
-        fields = ["application", "cidr", "gateway", "notes"]
+        fields = ["applications", "cidr", "notes"]
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
+            "applications": forms.CheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, pool=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.pool = pool
-        # Style fields with Tailwind
-        for field in self.fields.values():
+        for name, field in self.fields.items():
+            if name == "applications":
+                continue
             field.widget.attrs.setdefault(
                 "class",
                 "w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400",
@@ -38,7 +40,6 @@ class AssignmentForm(forms.ModelForm):
         if cidr_val is None or self.pool is None:
             return cleaned
 
-        # Run model-level validation (IP-family + inside-pool checks)
         instance = self.instance or Assignment()
         instance.pool = self.pool
         instance.cidr = cidr_val
@@ -48,7 +49,6 @@ class AssignmentForm(forms.ModelForm):
             self.add_error(None, exc)
             return cleaned
 
-        # Friendly overlap check against existing assignments in the same pool
         new_net = IPNetwork(str(cidr_val))
         qs = Assignment.objects.filter(pool=self.pool)
         if self.instance and self.instance.pk:
@@ -56,14 +56,28 @@ class AssignmentForm(forms.ModelForm):
         for other in qs:
             other_net = IPNetwork(str(other.cidr))
             if new_net in other_net or other_net in new_net:
+                names = ", ".join(sorted(a.name for a in other.applications.all())) or "—"
                 raise ValidationError(
-                    {
-                        "cidr": (
-                            f"Überschneidung mit {other.cidr} ({other.application.name})."
-                        )
-                    }
+                    {"cidr": f"Überschneidung mit {other.cidr} ({names})."}
                 )
         return cleaned
+
+    def clean_applications(self):
+        apps = self.cleaned_data["applications"]
+        if self.instance.pk:
+            used = set(
+                self.instance.ip_assignments.values_list("application_id", flat=True)
+            )
+            missing = used - {a.id for a in apps}
+            if missing:
+                names = list(
+                    Application.objects.filter(pk__in=missing).values_list("name", flat=True)
+                )
+                raise ValidationError(
+                    "Diese Anwendungen haben noch IP-Zuordnungen und können nicht "
+                    f"entfernt werden: {', '.join(names)}. Erst die IPs löschen."
+                )
+        return apps
 
 
 class PoolForm(forms.ModelForm):

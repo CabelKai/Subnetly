@@ -265,3 +265,26 @@ def test_pool_edit_loads_and_saves(auth_client):
     p.refresh_from_db()
     assert p.name == "NewName"
     assert p.notes == "edited"
+
+
+@pytest.mark.django_db
+def test_assignment_form_rejects_removal_of_app_with_ip_assignments(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28")
+    a1 = Application.objects.create(name="A1")
+    a2 = Application.objects.create(name="A2")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a1, a2)
+    IPAssignment.objects.create(assignment=s, address="217.61.249.1", application=a1)
+
+    response = auth_client.post(f"/assignment/{s.id}/edit/", {
+        "applications": [a2.id],
+        "cidr": "217.61.249.0/30",
+        "notes": "",
+    })
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "A1" in body
+    assert "IP-Zuordnungen" in body or "IP-Zuordnung" in body
+    s.refresh_from_db()
+    assert set(s.applications.values_list("name", flat=True)) == {"A1", "A2"}
