@@ -438,3 +438,17 @@ def test_ip_assignment_save_renders_errors_inline_on_validation_failure(auth_cli
     assert response.status_code == 200
     body = response.content.decode()
     assert "Subnetz" in body
+
+
+@pytest.mark.django_db
+def test_ip_assignment_delete_removes_row(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+    ip = IPAssignment.objects.create(assignment=s, address="217.61.249.1", application=a)
+
+    response = auth_client.get(f"/subnet/{s.id}/ip/{ip.id}/delete/")
+    assert response.status_code == 302
+    assert not IPAssignment.objects.filter(pk=ip.pk).exists()

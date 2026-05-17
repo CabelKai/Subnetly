@@ -258,5 +258,7 @@ def ip_assignment_save(request, assignment_id):
 
 @login_required
 def ip_assignment_delete(request, assignment_id, ip_id):
-    # vollständige Implementierung in Task 14
+    from .models import IPAssignment
+    obj = get_object_or_404(IPAssignment, pk=ip_id, assignment_id=assignment_id)
+    obj.delete()
     return redirect("ipam:assignment_edit", assignment_id=assignment_id)
