@@ -1,5 +1,6 @@
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from netaddr import IPNetwork
@@ -200,8 +201,59 @@ def pool_edit(request, pool_id):
 
 @login_required
 def ip_assignment_save(request, assignment_id):
-    # vollständige Implementierung in Task 13
-    return redirect("ipam:assignment_edit", assignment_id=assignment_id)
+    assignment = get_object_or_404(Assignment, pk=assignment_id)
+    if request.method != "POST":
+        return redirect("ipam:assignment_edit", assignment_id=assignment_id)
+
+    from .forms import IPAssignmentForm
+    from .models import IPAssignment
+    from .services.ip_list import build_ip_rows
+
+    address = request.POST.get("address", "")
+    instance = IPAssignment.objects.filter(
+        assignment=assignment, address=address,
+    ).first()
+    form = IPAssignmentForm(request.POST, instance=instance, assignment=assignment)
+
+    if form.is_valid():
+        with transaction.atomic():
+            obj = form.save(commit=False)
+            obj.assignment = assignment
+            if obj.is_gateway:
+                IPAssignment.objects.filter(
+                    assignment=assignment, is_gateway=True,
+                ).exclude(pk=obj.pk or 0).update(is_gateway=False)
+            obj.save()
+        return redirect("ipam:assignment_edit", assignment_id=assignment_id)
+
+    # Error path: render edit page directly with the invalid form inline
+    rows = build_ip_rows(assignment)
+    replaced = False
+    for row in rows:
+        if row["address"] == address:
+            row["form"] = form
+            replaced = True
+        else:
+            row["form"] = IPAssignmentForm(
+                instance=row["ip_assignment"],
+                assignment=assignment,
+                initial=None if row["ip_assignment"] else {"address": row["address"]},
+            )
+    if not replaced:
+        rows.append({
+            "address": address,
+            "ip_assignment": None,
+            "form": form,
+            "is_full_mode": False,
+        })
+
+    subnet_form = AssignmentForm(instance=assignment, pool=assignment.pool)
+    return render(request, "assignment_form.html", {
+        "form": subnet_form,
+        "pool": assignment.pool,
+        "assignment": assignment,
+        "ip_rows": rows,
+    })
 
 
 @login_required

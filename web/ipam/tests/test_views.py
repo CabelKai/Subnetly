@@ -335,3 +335,106 @@ def test_assignment_edit_renders_sparse_iplist_for_large_subnet(auth_client):
     assert "217.61.249.10" in body
     assert body.count("217.61.249.") < 30
     assert "hinzufügen" in body.lower() or "anlegen" in body.lower()
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_creates_new_row(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "address": "217.61.249.1",
+        "application": a.id,
+        "label": "Router-A",
+        "notes": "",
+    })
+    assert response.status_code == 302
+    ip = IPAssignment.objects.get(assignment=s, address="217.61.249.1")
+    assert ip.application == a
+    assert ip.label == "Router-A"
+    assert ip.is_gateway is False
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_updates_existing_row(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+    IPAssignment.objects.create(assignment=s, address="217.61.249.1", application=a, label="old")
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "address": "217.61.249.1",
+        "application": a.id,
+        "label": "new",
+        "notes": "",
+    })
+    assert response.status_code == 302
+    ip = IPAssignment.objects.get(assignment=s, address="217.61.249.1")
+    assert ip.label == "new"
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_setting_gateway_clears_others(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+    old_gw = IPAssignment.objects.create(
+        assignment=s, address="217.61.249.1", application=a, is_gateway=True,
+    )
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "address": "217.61.249.2",
+        "application": a.id,
+        "is_gateway": "on",
+        "label": "",
+        "notes": "",
+    })
+    assert response.status_code == 302
+    old_gw.refresh_from_db()
+    assert old_gw.is_gateway is False
+    new_gw = IPAssignment.objects.get(assignment=s, address="217.61.249.2")
+    assert new_gw.is_gateway is True
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_rejects_app_outside_subnet(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a1 = Application.objects.create(name="A1")
+    a2 = Application.objects.create(name="A2")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a1)
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "address": "217.61.249.1",
+        "application": a2.id,
+        "label": "",
+        "notes": "",
+    })
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "gültige" in body.lower() or "valid" in body.lower()
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_renders_errors_inline_on_validation_failure(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "address": "10.0.0.1",
+        "application": a.id,
+        "label": "",
+        "notes": "",
+    })
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Subnetz" in body
