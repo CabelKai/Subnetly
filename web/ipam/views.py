@@ -124,11 +124,14 @@ def assignment_edit(request, assignment_id):
             initial=None if row["ip_assignment"] else {"address": row["address"]},
         )
 
+    is_sparse_mode = IPNetwork(str(assignment.cidr)).size > 32
+
     return render(request, "assignment_form.html", {
         "form": form,
         "pool": pool,
         "assignment": assignment,
         "ip_rows": rows,
+        "is_sparse_mode": is_sparse_mode,
     })
 
 
@@ -209,6 +212,13 @@ def ip_assignment_save(request, assignment_id):
     from .models import IPAssignment
     from .services.ip_list import build_ip_rows
 
+    # Detect delete action on a row form (CSRF-protected POST path)
+    if request.POST.get("action") == "delete":
+        ip_id = request.POST.get("ip_id")
+        if ip_id:
+            IPAssignment.objects.filter(pk=ip_id, assignment_id=assignment_id).delete()
+        return redirect("ipam:assignment_edit", assignment_id=assignment_id)
+
     address = request.POST.get("address", "")
     instance = IPAssignment.objects.filter(
         assignment=assignment, address=address,
@@ -248,17 +258,21 @@ def ip_assignment_save(request, assignment_id):
         })
 
     subnet_form = AssignmentForm(instance=assignment, pool=assignment.pool)
+    is_sparse_mode = IPNetwork(str(assignment.cidr)).size > 32
     return render(request, "assignment_form.html", {
         "form": subnet_form,
         "pool": assignment.pool,
         "assignment": assignment,
         "ip_rows": rows,
+        "is_sparse_mode": is_sparse_mode,
     })
 
 
 @login_required
 def ip_assignment_delete(request, assignment_id, ip_id):
     from .models import IPAssignment
+    if request.method != "POST":
+        return redirect("ipam:assignment_edit", assignment_id=assignment_id)
     obj = get_object_or_404(IPAssignment, pk=ip_id, assignment_id=assignment_id)
     obj.delete()
     return redirect("ipam:assignment_edit", assignment_id=assignment_id)

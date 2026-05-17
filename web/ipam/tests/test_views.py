@@ -441,7 +441,21 @@ def test_ip_assignment_save_renders_errors_inline_on_validation_failure(auth_cli
 
 
 @pytest.mark.django_db
-def test_ip_assignment_delete_removes_row(auth_client):
+def test_assignment_edit_renders_add_row_for_empty_large_subnet(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.248.0/22")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/24")
+    s.applications.add(a)
+    # no IPAssignments yet
+
+    response = auth_client.get(f"/assignment/{s.id}/edit/")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "hinzufügen" in body.lower()
+
+
+@pytest.mark.django_db
+def test_ip_assignment_delete_rejects_get(auth_client):
     from ipam.models import IPAssignment
     p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
     a = Application.objects.create(name="A")
@@ -449,6 +463,31 @@ def test_ip_assignment_delete_removes_row(auth_client):
     s.applications.add(a)
     ip = IPAssignment.objects.create(assignment=s, address="217.61.249.1", application=a)
 
+    # GET must be redirected, NOT delete the row
     response = auth_client.get(f"/subnet/{s.id}/ip/{ip.id}/delete/")
+    assert response.status_code == 302
+    assert IPAssignment.objects.filter(pk=ip.pk).exists()
+
+    # POST does delete
+    response = auth_client.post(f"/subnet/{s.id}/ip/{ip.id}/delete/")
+    assert response.status_code == 302
+    assert not IPAssignment.objects.filter(pk=ip.pk).exists()
+
+
+@pytest.mark.django_db
+def test_ip_assignment_save_with_action_delete_removes_row(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+    ip = IPAssignment.objects.create(assignment=s, address="217.61.249.1", application=a)
+
+    response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
+        "action": "delete",
+        "ip_id": ip.id,
+        "address": "217.61.249.1",
+        "application": a.id,
+    })
     assert response.status_code == 302
     assert not IPAssignment.objects.filter(pk=ip.pk).exists()

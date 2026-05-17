@@ -91,13 +91,16 @@
                 <div class="px-2 py-1 border-t border-slate-100">{{ row.form.label }}</div>
                 <div class="px-2 py-1 border-t border-slate-100">{{ row.form.notes }}</div>
                 <div class="px-2 py-1 border-t border-slate-100 whitespace-nowrap">
-                    <button type="submit"
+                    <button type="submit" name="action" value="save"
                             class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">
                         Speichern
                     </button>
                     {% if row.ip_assignment %}
-                    <a href="{% url 'ipam:ip_assignment_delete' assignment.id row.ip_assignment.id %}"
-                       class="text-red-600 hover:underline ml-2">×</a>
+                    <button type="submit" name="action" value="delete"
+                            formnovalidate
+                            class="text-red-600 hover:underline ml-2 bg-transparent border-0 cursor-pointer p-0"
+                            title="IP-Zuordnung löschen">×</button>
+                    <input type="hidden" name="ip_id" value="{{ row.ip_assignment.id }}">
                     {% endif %}
                 </div>
             </form>
@@ -115,7 +118,7 @@
             </div>
             {% endfor %}
 
-            {% if ip_rows and not ip_rows.0.is_full_mode %}
+            {% if is_sparse_mode %}
             <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}" class="contents">
                 {% csrf_token %}
                 <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">

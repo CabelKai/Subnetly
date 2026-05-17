@@ -15,7 +15,6 @@
         <tr>
             <th class="text-left p-2">Pool</th>
             <th class="text-left p-2">CIDR</th>
-            <th class="text-left p-2">Gateway</th>
             <th class="text-left p-2">Notes</th>
             <th class="p-2"></th>
         </tr>
@@ -25,12 +24,11 @@
         <tr class="border-t">
             <td class="p-2 font-mono"><a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{% cidr_tooltip a.pool.cidr %}</a></td>
             <td class="p-2 font-mono">{% cidr_tooltip a.cidr %}</td>
-            <td class="p-2 font-mono">{{ a.gateway|default_if_none:"" }}</td>
             <td class="p-2 text-slate-600">{{ a.notes|truncatechars:80 }}</td>
             <td class="p-2 text-right"><a href="{% url 'ipam:assignment_edit' a.id %}" class="underline">bearbeiten</a></td>
         </tr>
     {% empty %}
-        <tr><td colspan="5" class="p-4 text-center text-slate-500">Keine Zuweisungen.</td></tr>
+        <tr><td colspan="4" class="p-4 text-center text-slate-500">Keine Zuweisungen.</td></tr>
     {% endfor %}
     </tbody>
 </table>
