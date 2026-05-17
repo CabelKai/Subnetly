@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{% if assignment %}Zuweisung bearbeiten{% else %}Neue Zuweisung{% endif %}{% endblock %}
+{% block title %}{% if assignment %}Subnetz bearbeiten{% else %}Neue Zuweisung{% endif %}{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-4xl mx-auto">
     <h1 class="text-2xl font-bold text-slate-800 mb-1">
-        {% if assignment %}Zuweisung bearbeiten{% else %}Neue Zuweisung{% endif %}
+        {% if assignment %}Subnetz bearbeiten{% else %}Neue Zuweisung{% endif %}
     </h1>
 
     {# Pool info (read-only) #}
@@ -12,7 +12,7 @@
         {{ pool.name }} &mdash; <code class="font-mono">{{ pool.cidr }}</code>
     </div>
 
-    {# Non-field errors #}
+    {# Non-field errors of the subnet form #}
     {% if form.non_field_errors %}
     <div class="mb-4 bg-red-50 border border-red-300 rounded px-4 py-3 text-sm text-red-700">
         {% for error in form.non_field_errors %}
@@ -21,9 +21,9 @@
     </div>
     {% endif %}
 
-    <form method="post" novalidate>
+    {# === Subnet metadata form === #}
+    <form method="post" novalidate class="mb-8 bg-white border border-slate-200 rounded p-4">
         {% csrf_token %}
-
         {% for field in form %}
         <div class="mb-4">
             <label for="{{ field.id_for_label }}"
@@ -33,9 +33,7 @@
             {{ field }}
             {% if field.errors %}
             <ul class="mt-1 text-xs text-red-600">
-                {% for error in field.errors %}
-                <li>{{ error }}</li>
-                {% endfor %}
+                {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
             </ul>
             {% endif %}
             {% if field.help_text %}
@@ -43,17 +41,123 @@
             {% endif %}
         </div>
         {% endfor %}
-
-        <div class="flex items-center gap-4 mt-6">
+        <div class="flex items-center gap-4 mt-2">
             <button type="submit"
                     class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium px-5 py-2 rounded">
-                Speichern
+                Subnetz speichern
             </button>
             <a href="{% url 'ipam:pool_detail' pool.pk %}"
                class="text-sm text-slate-500 hover:text-slate-700 underline">
-                Abbrechen
+                Zurück zum Pool
             </a>
         </div>
     </form>
+
+    {# === IP assignment section === #}
+    {% if assignment %}
+    <h2 class="text-lg font-semibold text-slate-800 mb-2">IP-Zuordnungen</h2>
+
+    {% if not assignment.applications.exists %}
+    <div class="mb-4 bg-amber-50 border border-amber-300 rounded px-4 py-3 text-sm text-amber-800">
+        Erst Anwendungen am Subnetz hinterlegen, dann können IPs zugeordnet werden.
+    </div>
+    {% else %}
+
+    <div class="overflow-x-auto bg-white border border-slate-200 rounded">
+        <table class="w-full text-xs">
+            <thead class="bg-slate-100 text-slate-600">
+                <tr>
+                    <th class="px-2 py-2 text-left font-semibold">Adresse</th>
+                    <th class="px-2 py-2 text-left font-semibold">Anwendung</th>
+                    <th class="px-2 py-2 text-left font-semibold">Gateway</th>
+                    <th class="px-2 py-2 text-left font-semibold">Label</th>
+                    <th class="px-2 py-2 text-left font-semibold">Notes</th>
+                    <th class="px-2 py-2 text-left font-semibold">Aktion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in ip_rows %}
+                <tr class="border-t border-slate-100 align-top">
+                    <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}">
+                        {% csrf_token %}
+                        <td class="px-2 py-1 font-mono whitespace-nowrap">
+                            {% if row.is_full_mode %}
+                                <input type="hidden" name="address" value="{{ row.address }}">
+                                {{ row.address }}
+                            {% else %}
+                                <input type="text" name="address" value="{{ row.form.address.value|default:'' }}"
+                                       class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+                            {% endif %}
+                        </td>
+                        <td class="px-2 py-1">{{ row.form.application }}</td>
+                        <td class="px-2 py-1">{{ row.form.is_gateway }}</td>
+                        <td class="px-2 py-1">{{ row.form.label }}</td>
+                        <td class="px-2 py-1">{{ row.form.notes }}</td>
+                        <td class="px-2 py-1 whitespace-nowrap">
+                            <button type="submit"
+                                    class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">
+                                Speichern
+                            </button>
+                            {% if row.ip_assignment %}
+                            <a href="{% url 'ipam:ip_assignment_delete' assignment.id row.ip_assignment.id %}"
+                               class="text-red-600 hover:underline ml-2">×</a>
+                            {% endif %}
+                        </td>
+                    </form>
+                </tr>
+                {% if row.form.errors %}
+                <tr class="bg-red-50">
+                    <td colspan="6" class="px-2 py-2 text-red-700 text-xs">
+                        {% for field, errors in row.form.errors.items %}
+                            <strong>{{ field }}:</strong>
+                            {% for e in errors %}{{ e }}{% endfor %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-2 py-4 text-center text-slate-400 italic">
+                        Keine IPs zugeordnet.
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if ip_rows and not ip_rows.0.is_full_mode %}
+                <tr class="border-t-2 border-slate-300 bg-slate-50">
+                    <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}">
+                        {% csrf_token %}
+                        <td class="px-2 py-1">
+                            <input type="text" name="address" placeholder="z.B. 10.0.0.1"
+                                   class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+                        </td>
+                        <td class="px-2 py-1">
+                            <select name="application"
+                                    class="border border-slate-300 rounded px-2 py-1 text-xs">
+                                <option value="">---</option>
+                                {% for app in assignment.applications.all %}
+                                <option value="{{ app.id }}">{{ app.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td class="px-2 py-1"><input type="checkbox" name="is_gateway"></td>
+                        <td class="px-2 py-1"><input type="text" name="label"
+                                                       class="border border-slate-300 rounded px-2 py-1 text-xs w-32"></td>
+                        <td class="px-2 py-1"><input type="text" name="notes"
+                                                       class="border border-slate-300 rounded px-2 py-1 text-xs"></td>
+                        <td class="px-2 py-1">
+                            <button type="submit"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">
+                                + IP hinzufügen
+                            </button>
+                        </td>
+                    </form>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {% endif %}
 </div>
 {% endblock %}

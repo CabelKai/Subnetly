@@ -112,7 +112,23 @@ def assignment_edit(request, assignment_id):
             return redirect("ipam:pool_detail", pool_id=pool.pk)
     else:
         form = AssignmentForm(instance=assignment, pool=pool)
-    return render(request, "assignment_form.html", {"form": form, "pool": pool, "assignment": assignment})
+
+    from .forms import IPAssignmentForm
+    from .services.ip_list import build_ip_rows
+    rows = build_ip_rows(assignment)
+    for row in rows:
+        row["form"] = IPAssignmentForm(
+            instance=row["ip_assignment"],
+            assignment=assignment,
+            initial=None if row["ip_assignment"] else {"address": row["address"]},
+        )
+
+    return render(request, "assignment_form.html", {
+        "form": form,
+        "pool": pool,
+        "assignment": assignment,
+        "ip_rows": rows,
+    })
 
 
 @login_required
@@ -180,3 +196,15 @@ def pool_edit(request, pool_id):
     else:
         form = PoolForm(instance=pool)
     return render(request, "pool_form.html", {"form": form, "mode": "edit", "obj": pool})
+
+
+@login_required
+def ip_assignment_save(request, assignment_id):
+    # vollständige Implementierung in Task 13
+    return redirect("ipam:assignment_edit", assignment_id=assignment_id)
+
+
+@login_required
+def ip_assignment_delete(request, assignment_id, ip_id):
+    # vollständige Implementierung in Task 14
+    return redirect("ipam:assignment_edit", assignment_id=assignment_id)

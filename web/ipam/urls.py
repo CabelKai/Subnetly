@@ -15,4 +15,8 @@ urlpatterns = [
     path("anwendung/<int:application_id>/edit/", views.application_edit, name="application_edit"),
     path("pool/new/", views.pool_new, name="pool_new"),
     path("pool/<int:pool_id>/edit/", views.pool_edit, name="pool_edit"),
+    path("subnet/<int:assignment_id>/ip/save/",
+         views.ip_assignment_save, name="ip_assignment_save"),
+    path("subnet/<int:assignment_id>/ip/<int:ip_id>/delete/",
+         views.ip_assignment_delete, name="ip_assignment_delete"),
 ]

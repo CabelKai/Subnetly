@@ -301,3 +301,37 @@ def test_assignment_form_rejects_removal_of_app_with_ip_assignments(auth_client)
     assert "IP-Zuordnungen" in body or "IP-Zuordnung" in body
     s.refresh_from_db()
     assert set(s.applications.values_list("name", flat=True)) == {"A1", "A2"}
+
+
+@pytest.mark.django_db
+def test_assignment_edit_renders_full_iplist_for_small_subnet(auth_client):
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/24")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
+
+    response = auth_client.get(f"/assignment/{s.id}/edit/")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "217.61.249.0" in body
+    assert "217.61.249.1" in body
+    assert "217.61.249.2" in body
+    assert "217.61.249.3" in body
+    assert "IP-Zuordnung" in body
+
+
+@pytest.mark.django_db
+def test_assignment_edit_renders_sparse_iplist_for_large_subnet(auth_client):
+    from ipam.models import IPAssignment
+    p = Pool.objects.create(name="P", cidr="217.61.248.0/22")
+    a = Application.objects.create(name="A")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/24")
+    s.applications.add(a)
+    IPAssignment.objects.create(assignment=s, address="217.61.249.10", application=a)
+
+    response = auth_client.get(f"/assignment/{s.id}/edit/")
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "217.61.249.10" in body
+    assert body.count("217.61.249.") < 30
+    assert "hinzufügen" in body.lower() or "anlegen" in body.lower()
