@@ -1,26 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Anwendungen{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-4">
+<div class="flex items-center justify-between mb-4 gap-2">
     <h1 class="text-2xl font-semibold">Anwendungen</h1>
     <a href="{% url 'ipam:application_new' %}"
-       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium whitespace-nowrap">
         + Anwendung
     </a>
 </div>
-<table class="w-full bg-white rounded shadow text-sm">
-    <thead class="bg-slate-100">
-        <tr><th class="text-left p-2">Name</th><th class="text-left p-2">Zuweisungen</th></tr>
-    </thead>
-    <tbody>
+<div class="bg-white rounded shadow overflow-hidden">
+    <div class="hidden md:grid grid-cols-[1fr_140px] bg-slate-100 text-sm font-semibold">
+        <div class="p-2">Name</div>
+        <div class="p-2">Zuweisungen</div>
+    </div>
     {% for a in applications %}
-        <tr class="border-t">
-            <td class="p-2"><a href="{% url 'ipam:application_detail' a.id %}" class="underline">{{ a.name }}</a></td>
-            <td class="p-2">{{ a.n_assignments }}</td>
-        </tr>
+    <a href="{% url 'ipam:application_detail' a.id %}"
+       class="block md:grid md:grid-cols-[1fr_140px] border-t hover:bg-slate-50 p-3 md:p-0 text-sm">
+        <div class="md:p-2 font-medium md:font-normal underline">{{ a.name }}</div>
+        <div class="md:p-2 text-slate-600 mt-1 md:mt-0">{{ a.n_assignments }} Zuweisung(en)</div>
+    </a>
     {% empty %}
-        <tr><td colspan="2" class="p-4 text-center text-slate-500">Noch keine Anwendungen.</td></tr>
+    <div class="p-4 text-center text-slate-500">Noch keine Anwendungen.</div>
     {% endfor %}
-    </tbody>
-</table>
+</div>
 {% endblock %}
