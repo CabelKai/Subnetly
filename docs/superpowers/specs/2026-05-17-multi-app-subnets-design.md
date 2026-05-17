@@ -107,7 +107,7 @@ Pool ──< Assignment >── Application       (M2M, neu)
             └──< IPAssignment >── Application (FK, neu)
 ```
 
-## 3. Migration `0004_multi_app_subnets`
+## 3. Migration `0005_multi_app_subnets`
 
 Eine Datei, drei logische Schritte:
 
@@ -421,7 +421,7 @@ Reine Service-Funktion ohne Django-DB-Magie außer `assignment.ip_assignments`.
 | Datei | Änderung |
 |---|---|
 | `models.py` | M2M `applications`, neues `IPAssignment`, alte Felder weg |
-| `migrations/0004_*.py` | neue Migration (Schema + RunPython + Schema) |
+| `migrations/0005_*.py` | neue Migration (Schema + RunPython + Schema) |
 | `forms.py` | `AssignmentForm.application` → `applications`; neue `IPAssignmentForm` |
 | `views.py` | `assignment_edit` erweitert um `ip_rows`; neue Views `ip_assignment_save`/`_delete`; Pool-Color-Logik nutzt `_first_app_name(a)` |
 | `urls.py` | neue Routen `ip_assignment_save`/`_delete` |
@@ -466,7 +466,7 @@ Reine Service-Funktion ohne Django-DB-Magie außer `assignment.ip_assignments`.
 - `test_assignment_form_rejects_removal_of_app_with_ip_assignments`
 
 **Migration:**
-- `test_0004_migrates_single_app_to_m2m` (MigrationExecutor-basiert)
+- `test_0005_migrates_single_app_to_m2m` (MigrationExecutor-basiert)
 
 **Services:**
 - `test_build_ip_rows_full_mode_includes_all_addresses_with_gaps`
