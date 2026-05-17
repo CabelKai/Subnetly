@@ -49,7 +49,7 @@
 </aside>
 {% endif %}
 
-<main class="pt-14 p-4 md:p-6 {% if user.is_authenticated %}md:pl-[calc(18rem+1.5rem)]{% endif %} overflow-x-auto">
+<main class="pt-14 px-4 pb-4 md:px-6 md:pb-6 {% if user.is_authenticated %}md:pl-[calc(18rem+1.5rem)]{% endif %} overflow-x-auto">
     {% block content %}{% endblock %}
 </main>
 
