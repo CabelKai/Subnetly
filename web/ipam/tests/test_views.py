@@ -491,3 +491,12 @@ def test_ip_assignment_save_with_action_delete_removes_row(auth_client):
     })
     assert response.status_code == 302
     assert not IPAssignment.objects.filter(pk=ip.pk).exists()
+
+
+@pytest.mark.django_db
+def test_mobile_navigation_markup_present(auth_client):
+    response = auth_client.get("/")
+    body = response.content.decode()
+    assert 'id="nav-toggle"' in body
+    assert 'for="nav-toggle"' in body
+    assert "peer-checked/drawer:translate-x-0" in body
