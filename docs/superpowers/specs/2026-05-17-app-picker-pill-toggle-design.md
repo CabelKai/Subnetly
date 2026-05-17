@@ -28,7 +28,17 @@ from django import forms
 class PillCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
     template_name = "ipam/widgets/pill_checkbox_select.html"
     option_template_name = "ipam/widgets/pill_checkbox_option.html"
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        existing = option["attrs"].get("class", "")
+        option["attrs"]["class"] = f"{existing} sr-only".strip() if existing else "sr-only"
+        return option
 ```
+
+`create_option` injiziert `sr-only` in `attrs`, anstatt es als literales
+Attribut im Template zu setzen. Sonst würde `attrs.html` (siehe unten)
+ein zweites `class`-Attribut emittieren, das das erste überlagert.
 
 In `forms.py`:
 
@@ -67,11 +77,14 @@ und alle weiteren `attrs` korrekt rendert:
               has-[:checked]:border-slate-900">
   <input type="{{ widget.type }}" name="{{ widget.name }}"
          {% if widget.value != None %}value="{{ widget.value|stringformat:'s' }}"{% endif %}
-         class="sr-only"
          {% include "django/forms/widgets/attrs.html" %}>
   {{ widget.label }}
 </label>
 ```
+
+Der `<input>` hat **kein** literales `class="sr-only"`. Stattdessen
+sorgt `create_option` im Widget dafür, dass `sr-only` über
+`widget.attrs["class"]` emittiert wird — siehe oben.
 
 Die `checked`-Markierung kommt automatisch über `widget.attrs.checked`,
 das Django für selektierte Optionen setzt (gleiche Mechanik wie das
