@@ -17,9 +17,12 @@ def test_sidebar_groups_assignments_by_pool_then_application(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.248.0/23", )
     a1 = Application.objects.create(name="BINSS")
     a2 = Application.objects.create(name="Falcon")
-    Assignment.objects.create(pool=p, application=a1, cidr="217.61.249.0/28")
-    Assignment.objects.create(pool=p, application=a1, cidr="217.61.249.16/28")
-    Assignment.objects.create(pool=p, application=a2, cidr="217.61.249.32/29")
+    s1 = Assignment.objects.create(pool=p, cidr="217.61.249.0/28")
+    s1.applications.add(a1)
+    s2 = Assignment.objects.create(pool=p, cidr="217.61.249.16/28")
+    s2.applications.add(a1)
+    s3 = Assignment.objects.create(pool=p, cidr="217.61.249.32/29")
+    s3.applications.add(a2)
 
     response = auth_client.get("/")
     body = response.content.decode()
@@ -40,7 +43,8 @@ def test_index_shows_pool_card_with_utilization(auth_client):
     p = Pool.objects.create(name="Anycast", cidr="217.61.248.0/23", )
     a = Application.objects.create(name="X")
     # 16 of 512 IPs = 3.125% utilization
-    Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/28")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/28")
+    s.applications.add(a)
 
     response = auth_client.get("/")
     body = response.content.decode()
@@ -55,7 +59,8 @@ def test_ipv4_pool_detail_shows_grid_with_blocks(auth_client):
     """Pool detail page renders a block grid for IPv4 pools."""
     p = Pool.objects.create(name="TestPool", cidr="10.0.0.0/28", )
     a = Application.objects.create(name="Acme")
-    Assignment.objects.create(pool=p, application=a, cidr="10.0.0.0/30")
+    s = Assignment.objects.create(pool=p, cidr="10.0.0.0/30")
+    s.applications.add(a)
 
     response = auth_client.get(f"/pool/{p.id}/")
     assert response.status_code == 200
@@ -79,8 +84,10 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
     p = Pool.objects.create(name="v6Pool", cidr="2001:db8::/32")
     a1 = Application.objects.create(name="AlphaNet")
     a2 = Application.objects.create(name="BetaCorp")
-    Assignment.objects.create(pool=p, application=a1, cidr="2001:db8:1::/48")
-    Assignment.objects.create(pool=p, application=a2, cidr="2001:db8:2::/48")
+    s1 = Assignment.objects.create(pool=p, cidr="2001:db8:1::/48")
+    s1.applications.add(a1)
+    s2 = Assignment.objects.create(pool=p, cidr="2001:db8:2::/48")
+    s2.applications.add(a2)
 
     response = auth_client.get(f"/pool/{p.id}/")
     assert response.status_code == 200
@@ -104,13 +111,13 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
 def test_assignment_new_rejects_overlap(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a1 = Application.objects.create(name="A")
-    Application.objects.create(name="B")
-    Assignment.objects.create(pool=p, application=a1, cidr="217.61.249.0/30")
+    b = Application.objects.create(name="B")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a1)
 
     response = auth_client.post(f"/pool/{p.id}/assign/new/", {
-        "application": Application.objects.get(name="B").id,
+        "applications": [b.id],
         "cidr": "217.61.249.0/29",
-        "gateway": "",
         "notes": "",
     })
     body = response.content.decode()
@@ -124,9 +131,8 @@ def test_assignment_new_happy_path_redirects(auth_client):
     a = Application.objects.create(name="A")
 
     response = auth_client.post(f"/pool/{p.id}/assign/new/", {
-        "application": a.id,
+        "applications": [a.id],
         "cidr": "217.61.249.0/30",
-        "gateway": "217.61.249.1",
         "notes": "Router",
     })
     assert response.status_code == 302
@@ -137,15 +143,15 @@ def test_assignment_new_happy_path_redirects(auth_client):
 def test_assignment_edit_loads_and_saves(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="A")
-    asgn = Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30", notes="old")
+    asgn = Assignment.objects.create(pool=p, cidr="217.61.249.0/30", notes="old")
+    asgn.applications.add(a)
 
     response = auth_client.get(f"/assignment/{asgn.id}/edit/")
     assert response.status_code == 200
 
     response = auth_client.post(f"/assignment/{asgn.id}/edit/", {
-        "application": a.id,
+        "applications": [a.id],
         "cidr": "217.61.249.0/30",
-        "gateway": "",
         "notes": "new",
     })
     assert response.status_code == 302
@@ -157,8 +163,10 @@ def test_assignment_edit_loads_and_saves(auth_client):
 def test_application_list_shows_count(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="BINSS")
-    Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30")
-    Assignment.objects.create(pool=p, application=a, cidr="217.61.249.4/30")
+    s1 = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s1.applications.add(a)
+    s2 = Assignment.objects.create(pool=p, cidr="217.61.249.4/30")
+    s2.applications.add(a)
 
     response = auth_client.get("/anwendungen/")
     body = response.content.decode()
@@ -171,7 +179,8 @@ def test_application_list_shows_count(auth_client):
 def test_application_detail_lists_assignments(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a = Application.objects.create(name="BINSS")
-    Assignment.objects.create(pool=p, application=a, cidr="217.61.249.0/30")
+    s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    s.applications.add(a)
 
     response = auth_client.get(f"/anwendung/{a.id}/")
     body = response.content.decode()

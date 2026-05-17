@@ -35,29 +35,29 @@ def test_assignment_basic_create(pool_v4):
     a_obj = Application.objects.create(name="BINSS")
     a = Assignment.objects.create(
         pool=pool_v4,
-        application=a_obj,
         cidr="217.61.249.0/28",
-        gateway="217.61.249.1",
         notes="Router .1, Switch .2",
     )
+    a.applications.add(a_obj)
     a.refresh_from_db()
     assert a.cidr.prefixlen == 28
-    assert str(a.gateway) == "217.61.249.1"
+    assert list(a.applications.values_list("name", flat=True)) == ["BINSS"]
 
 
 @pytest.mark.django_db
 def test_assignment_orders_by_cidr(pool_v4):
     a_obj = Application.objects.create(name="X")
-    Assignment.objects.create(pool=pool_v4, application=a_obj, cidr="217.61.249.16/28")
-    Assignment.objects.create(pool=pool_v4, application=a_obj, cidr="217.61.249.0/28")
+    a1 = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.16/28")
+    a1.applications.add(a_obj)
+    a2 = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/28")
+    a2.applications.add(a_obj)
     cidrs = [str(a.cidr) for a in pool_v4.assignments.all()]
     assert cidrs == ["217.61.249.0/28", "217.61.249.16/28"]
 
 
 @pytest.mark.django_db
 def test_assignment_must_be_inside_pool(pool_v4):
-    a_obj = Application.objects.create(name="Outsider")
-    a = Assignment(pool=pool_v4, application=a_obj, cidr="10.0.0.0/24")
+    a = Assignment(pool=pool_v4, cidr="10.0.0.0/24")
     with pytest.raises(ValidationError) as exc:
         a.full_clean()
     assert "innerhalb" in str(exc.value).lower() or "inside" in str(exc.value).lower()
@@ -65,30 +65,25 @@ def test_assignment_must_be_inside_pool(pool_v4):
 
 @pytest.mark.django_db
 def test_assignment_ip_family_must_match_pool(pool_v4):
-    a_obj = Application.objects.create(name="V6User")
-    a = Assignment(pool=pool_v4, application=a_obj, cidr="2a05:ed80:100:1::/64")
+    a = Assignment(pool=pool_v4, cidr="2a05:ed80:100:1::/64")
     with pytest.raises(ValidationError):
         a.full_clean()
 
 
 @pytest.mark.django_db
 def test_assignments_in_same_pool_cannot_overlap(pool_v4):
-    a1 = Application.objects.create(name="A")
-    a2 = Application.objects.create(name="B")
-    Assignment.objects.create(pool=pool_v4, application=a1, cidr="217.61.249.0/28")
+    Application.objects.create(name="A")
+    Application.objects.create(name="B")
+    Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/28")
     with pytest.raises(IntegrityError):
         with transaction.atomic():
-            Assignment.objects.create(pool=pool_v4, application=a2, cidr="217.61.249.8/29")
+            Assignment.objects.create(pool=pool_v4, cidr="217.61.249.8/29")
 
 
 @pytest.mark.django_db
 def test_assignments_in_different_pools_can_overlap_logically(pool_v4, pool_v6):
-    # Different pools = different rows in the EXCLUDE constraint partition,
-    # so logically overlapping CIDRs in unrelated pools are allowed.
-    # Use CIDRs that match each pool's family.
-    a_obj = Application.objects.create(name="Z")
-    Assignment.objects.create(pool=pool_v4, application=a_obj, cidr="217.61.249.0/28")
-    Assignment.objects.create(pool=pool_v6, application=a_obj, cidr="2a05:ed80:100:1::/64")
+    Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/28")
+    Assignment.objects.create(pool=pool_v6, cidr="2a05:ed80:100:1::/64")
 
 
 @pytest.mark.django_db
