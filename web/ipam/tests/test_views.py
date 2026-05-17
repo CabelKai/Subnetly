@@ -108,6 +108,19 @@ def test_ipv6_pool_detail_lists_assignments(auth_client):
 
 
 @pytest.mark.django_db
+def test_pool_color_uses_first_app_alphabetically(auth_client):
+    p = Pool.objects.create(name="P", cidr="10.0.0.0/28")
+    z = Application.objects.create(name="Zulu")
+    a = Application.objects.create(name="Alpha")
+    s = Assignment.objects.create(pool=p, cidr="10.0.0.0/30")
+    s.applications.add(z, a)
+
+    response = auth_client.get(f"/pool/{p.id}/")
+    body = response.content.decode()
+    assert "Alpha" in body and "Zulu" in body
+
+
+@pytest.mark.django_db
 def test_assignment_new_rejects_overlap(auth_client):
     p = Pool.objects.create(name="P", cidr="217.61.249.0/28", )
     a1 = Application.objects.create(name="A")

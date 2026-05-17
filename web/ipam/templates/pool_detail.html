@@ -24,10 +24,11 @@
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
                 <div class="group relative rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                     style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto; background-color: {{ b.color }};">
+                     style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto; background-color: {{ b.color }};"
+                     title="{{ b.app_names }}">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
                        class="block no-underline text-slate-900">
-                        <span class="font-semibold block">{{ b.application.name }}</span>
+                        <span class="font-semibold block">{{ b.app_names }}</span>
                         <span class="font-mono block">{{ b.cidr }}</span>
                     </a>
                     {% cidr_tooltip_panel b.cidr %}
@@ -59,7 +60,7 @@
             {% for row in v6_rows %}
             <tr class="border-t border-slate-200 hover:bg-slate-50">
                 <td class="px-3 py-2 font-mono">{% cidr_tooltip row.cidr %}</td>
-                <td class="px-3 py-2">{{ row.application.name }}</td>
+                <td class="px-3 py-2">{{ row.app_names }}</td>
                 <td class="px-3 py-2">
                     <a href="{% url 'ipam:assignment_edit' row.id %}"
                        class="text-blue-600 hover:underline text-xs">Bearbeiten</a>

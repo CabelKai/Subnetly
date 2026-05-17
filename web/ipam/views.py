@@ -31,51 +31,54 @@ def index(request):
     return render(request, "index.html", {"cards": cards})
 
 
+def _first_app_name(assignment):
+    apps = sorted((a.name for a in assignment.applications.all()), key=str.casefold)
+    return apps[0] if apps else "—"
+
+
+def _all_app_names(assignment):
+    return ", ".join(sorted((a.name for a in assignment.applications.all()), key=str.casefold)) or "—"
+
+
 @login_required
 def pool_detail(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id)
 
     if pool.ip_version == 4:
         pool_net = IPNetwork(str(pool.cidr))
-        db_assignments = list(pool.assignments.select_related("application").all())
+        db_assignments = list(
+            pool.assignments.prefetch_related("applications").all()
+        )
         assignments = [
-            {"cidr": IPNetwork(str(a.cidr)), "label": a.application.name}
+            {"cidr": IPNetwork(str(a.cidr)), "label": _first_app_name(a)}
             for a in db_assignments
         ]
         blocks = compute_blocks(pool_net, assignments)
 
-        # Per-pool color map: each unique application in this pool gets a
-        # distinct palette slot (no collisions while #apps ≤ palette size).
-        color_map = colors_for_set(a.application.name for a in db_assignments)
+        color_map = colors_for_set(_first_app_name(a) for a in db_assignments)
 
-        # Augment assigned blocks with color / application / ORM obj; compute
-        # a size-proportional width (rem). 0.3 rem per IP gives a /23 pool
-        # an ideal total of ~150 rem (~2400 px) — wider than most viewports,
-        # so the container wraps; clamps to max-content (readability) and
-        # 100% (single oversized block fills its row instead of overflowing).
         for b in blocks:
             if b["kind"] == "assigned":
                 src = next(a for a in db_assignments if IPNetwork(str(a.cidr)) == b["cidr"])
-                b["color"] = color_map.get(src.application.name, "#E5E7EB")
-                b["application"] = src.application
+                first_name = _first_app_name(src)
+                b["color"] = color_map.get(first_name, "#E5E7EB")
+                b["app_names"] = _all_app_names(src)
                 b["obj"] = src
-            # Format as string with dot (CSS requires C-locale decimal separator,
-            # not the German comma that Django would emit via float interpolation).
             b["width_rem"] = f"{b['size'] * 0.3:.2f}"
 
-        context = {
-            "pool": pool,
-            "blocks": blocks,
-        }
+        context = {"pool": pool, "blocks": blocks}
     else:
         db_assignments = list(
-            pool.assignments.select_related("application").order_by("cidr")
+            pool.assignments.prefetch_related("applications").order_by("cidr")
         )
-        context = {
-            "pool": pool,
-            "blocks": None,
-            "v6_rows": db_assignments,
-        }
+        rows = []
+        for a in db_assignments:
+            rows.append({
+                "id": a.id,
+                "cidr": a.cidr,
+                "app_names": _all_app_names(a),
+            })
+        context = {"pool": pool, "blocks": None, "v6_rows": rows}
 
     return render(request, "pool_detail.html", context)
 
