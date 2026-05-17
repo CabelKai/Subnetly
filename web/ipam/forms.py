@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from netaddr import IPNetwork
 
-from .models import Application, Assignment, Pool
+from .models import Application, Assignment, IPAssignment, Pool
 
 
 class ApplicationForm(forms.ModelForm):
@@ -85,3 +85,43 @@ class PoolForm(forms.ModelForm):
         model = Pool
         fields = ["name", "cidr", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
+
+
+class IPAssignmentForm(forms.ModelForm):
+    class Meta:
+        model = IPAssignment
+        fields = ["address", "application", "is_gateway", "label", "notes"]
+        widgets = {
+            "notes": forms.TextInput(),
+        }
+
+    def __init__(self, *args, assignment=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.assignment = assignment
+        if assignment is not None:
+            self.fields["application"].queryset = assignment.applications.all()
+        for name, field in self.fields.items():
+            if name == "is_gateway":
+                continue
+            field.widget.attrs.setdefault(
+                "class",
+                "w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-400",
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.assignment is None:
+            return cleaned
+        instance = self.instance or IPAssignment()
+        instance.assignment = self.assignment
+        instance.address = cleaned.get("address")
+        instance.application = cleaned.get("application")
+        try:
+            instance.clean()
+        except ValidationError as exc:
+            if hasattr(exc, "error_dict"):
+                for field, errors in exc.error_dict.items():
+                    self.add_error(None if field == "__all__" else field, errors)
+            else:
+                self.add_error(None, exc.messages)
+        return cleaned
