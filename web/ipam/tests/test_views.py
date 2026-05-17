@@ -500,3 +500,31 @@ def test_mobile_navigation_markup_present(auth_client):
     assert 'id="nav-toggle"' in body
     assert 'for="nav-toggle"' in body
     assert "peer-checked/drawer:translate-x-0" in body
+
+
+@pytest.mark.django_db
+def test_assignment_edit_renders_pill_picker(auth_client):
+    """Applications field renders as pill-toggle labels, not <ul>/<li> checkboxes."""
+    p = Pool.objects.create(name="P", cidr="217.61.249.0/28")
+    a1 = Application.objects.create(name="Mail-Server")
+    a2 = Application.objects.create(name="DNS")
+    asgn = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
+    asgn.applications.add(a1)  # one selected, one not
+
+    response = auth_client.get(f"/assignment/{asgn.id}/edit/")
+    assert response.status_code == 200
+    body = response.content.decode()
+
+    # Pill container present
+    assert 'class="flex flex-wrap gap-2"' in body
+    # Each application rendered as a <label> with pill classes
+    assert body.count("has-[:checked]:bg-slate-900") == 2
+    assert "Mail-Server" in body
+    assert "DNS" in body
+    # Real checkbox inputs still in the DOM (existing JS depends on them)
+    assert 'name="applications"' in body
+    assert 'type="checkbox"' in body
+    # sr-only hides the native checkbox visually
+    assert 'class="sr-only"' in body
+    # No <ul>/<li> markup from the default CheckboxSelectMultiple template
+    assert '<ul id="id_applications"' not in body

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from netaddr import IPNetwork
 
 from .models import Application, Assignment, IPAssignment, Pool
+from .widgets import PillCheckboxSelectMultiple
 
 
 class ApplicationForm(forms.ModelForm):
@@ -20,7 +21,7 @@ class AssignmentForm(forms.ModelForm):
         fields = ["applications", "cidr", "notes"]
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
-            "applications": forms.CheckboxSelectMultiple(),
+            "applications": PillCheckboxSelectMultiple(),
         }
 
     def __init__(self, *args, pool=None, **kwargs):
