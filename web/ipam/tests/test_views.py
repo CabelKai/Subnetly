@@ -528,3 +528,5 @@ def test_assignment_edit_renders_pill_picker(auth_client):
     assert 'class="sr-only"' in body
     # No <ul>/<li> markup from the default CheckboxSelectMultiple template
     assert '<ul id="id_applications"' not in body
+    # Selected application renders with the `checked` attribute
+    assert "checked" in body

@@ -13,5 +13,6 @@ class PillCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
-        option["attrs"]["class"] = "sr-only"
+        existing = option["attrs"].get("class", "")
+        option["attrs"]["class"] = f"{existing} sr-only".strip() if existing else "sr-only"
         return option
