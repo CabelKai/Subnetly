@@ -63,99 +63,92 @@
     </div>
     {% else %}
 
-    <div class="overflow-x-auto bg-white border border-slate-200 rounded">
-        <table class="w-full text-xs">
-            <thead class="bg-slate-100 text-slate-600">
-                <tr>
-                    <th class="px-2 py-2 text-left font-semibold">Adresse</th>
-                    <th class="px-2 py-2 text-left font-semibold">Anwendung</th>
-                    <th class="px-2 py-2 text-left font-semibold">Gateway</th>
-                    <th class="px-2 py-2 text-left font-semibold">Label</th>
-                    <th class="px-2 py-2 text-left font-semibold">Notes</th>
-                    <th class="px-2 py-2 text-left font-semibold">Aktion</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in ip_rows %}
-                <tr class="border-t border-slate-100 align-top">
-                    <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}">
-                        {% csrf_token %}
-                        <td class="px-2 py-1 font-mono whitespace-nowrap">
-                            {% if row.is_full_mode %}
-                                <input type="hidden" name="address" value="{{ row.address }}">
-                                {{ row.address }}
-                            {% else %}
-                                <input type="text" name="address" value="{{ row.form.address.value|default:'' }}"
-                                       class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
-                            {% endif %}
-                        </td>
-                        <td class="px-2 py-1">{{ row.form.application }}</td>
-                        <td class="px-2 py-1">{{ row.form.is_gateway }}</td>
-                        <td class="px-2 py-1">{{ row.form.label }}</td>
-                        <td class="px-2 py-1">{{ row.form.notes }}</td>
-                        <td class="px-2 py-1 whitespace-nowrap">
-                            <button type="submit"
-                                    class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">
-                                Speichern
-                            </button>
-                            {% if row.ip_assignment %}
-                            <a href="{% url 'ipam:ip_assignment_delete' assignment.id row.ip_assignment.id %}"
-                               class="text-red-600 hover:underline ml-2">×</a>
-                            {% endif %}
-                        </td>
-                    </form>
-                </tr>
-                {% if row.form.errors %}
-                <tr class="bg-red-50">
-                    <td colspan="6" class="px-2 py-2 text-red-700 text-xs">
-                        {% for field, errors in row.form.errors.items %}
-                            <strong>{{ field }}:</strong>
-                            {% for e in errors %}{{ e }}{% endfor %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% endif %}
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="px-2 py-4 text-center text-slate-400 italic">
-                        Keine IPs zugeordnet.
-                    </td>
-                </tr>
-                {% endfor %}
+    <div class="bg-white border border-slate-200 rounded overflow-x-auto">
+        <div class="grid items-center text-xs"
+             style="grid-template-columns: auto auto auto auto auto auto;">
+            {# Header row #}
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Adresse</div>
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Anwendung</div>
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Gateway</div>
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Label</div>
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Notes</div>
+            <div class="bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Aktion</div>
 
-                {% if ip_rows and not ip_rows.0.is_full_mode %}
-                <tr class="border-t-2 border-slate-300 bg-slate-50">
-                    <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}">
-                        {% csrf_token %}
-                        <td class="px-2 py-1">
-                            <input type="text" name="address" placeholder="z.B. 10.0.0.1"
-                                   class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
-                        </td>
-                        <td class="px-2 py-1">
-                            <select name="application"
-                                    class="border border-slate-300 rounded px-2 py-1 text-xs">
-                                <option value="">---</option>
-                                {% for app in assignment.applications.all %}
-                                <option value="{{ app.id }}">{{ app.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td class="px-2 py-1"><input type="checkbox" name="is_gateway"></td>
-                        <td class="px-2 py-1"><input type="text" name="label"
-                                                       class="border border-slate-300 rounded px-2 py-1 text-xs w-32"></td>
-                        <td class="px-2 py-1"><input type="text" name="notes"
-                                                       class="border border-slate-300 rounded px-2 py-1 text-xs"></td>
-                        <td class="px-2 py-1">
-                            <button type="submit"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">
-                                + IP hinzufügen
-                            </button>
-                        </td>
-                    </form>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
+            {% for row in ip_rows %}
+            <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}" class="contents">
+                {% csrf_token %}
+                <div class="px-2 py-1 font-mono whitespace-nowrap border-t border-slate-100">
+                    {% if row.is_full_mode %}
+                        <input type="hidden" name="address" value="{{ row.address }}">
+                        {{ row.address }}
+                    {% else %}
+                        <input type="text" name="address" value="{{ row.form.address.value|default:'' }}"
+                               class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+                    {% endif %}
+                </div>
+                <div class="px-2 py-1 border-t border-slate-100">{{ row.form.application }}</div>
+                <div class="px-2 py-1 border-t border-slate-100">{{ row.form.is_gateway }}</div>
+                <div class="px-2 py-1 border-t border-slate-100">{{ row.form.label }}</div>
+                <div class="px-2 py-1 border-t border-slate-100">{{ row.form.notes }}</div>
+                <div class="px-2 py-1 border-t border-slate-100 whitespace-nowrap">
+                    <button type="submit"
+                            class="bg-slate-700 hover:bg-slate-600 text-white px-2 py-1 rounded">
+                        Speichern
+                    </button>
+                    {% if row.ip_assignment %}
+                    <a href="{% url 'ipam:ip_assignment_delete' assignment.id row.ip_assignment.id %}"
+                       class="text-red-600 hover:underline ml-2">×</a>
+                    {% endif %}
+                </div>
+            </form>
+            {% if row.form.errors %}
+            <div class="bg-red-50 px-2 py-2 text-red-700 text-xs" style="grid-column: 1 / -1;">
+                {% for field, errors in row.form.errors.items %}
+                    <strong>{{ field }}:</strong>
+                    {% for e in errors %}{{ e }}{% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% empty %}
+            <div class="px-2 py-4 text-center text-slate-400 italic" style="grid-column: 1 / -1;">
+                Keine IPs zugeordnet.
+            </div>
+            {% endfor %}
+
+            {% if ip_rows and not ip_rows.0.is_full_mode %}
+            <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}" class="contents">
+                {% csrf_token %}
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <input type="text" name="address" placeholder="z.B. 10.0.0.1"
+                           class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+                </div>
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <select name="application"
+                            class="border border-slate-300 rounded px-2 py-1 text-xs">
+                        <option value="">---</option>
+                        {% for app in assignment.applications.all %}
+                        <option value="{{ app.id }}">{{ app.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <input type="checkbox" name="is_gateway">
+                </div>
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <input type="text" name="label" class="border border-slate-300 rounded px-2 py-1 text-xs w-32">
+                </div>
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <input type="text" name="notes" class="border border-slate-300 rounded px-2 py-1 text-xs">
+                </div>
+                <div class="px-2 py-1 border-t-2 border-slate-300 bg-slate-50">
+                    <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded">
+                        + IP hinzufügen
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
     {% endif %}
