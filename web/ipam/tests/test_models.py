@@ -89,3 +89,18 @@ def test_assignments_in_different_pools_can_overlap_logically(pool_v4, pool_v6):
     a_obj = Application.objects.create(name="Z")
     Assignment.objects.create(pool=pool_v4, application=a_obj, cidr="217.61.249.0/28")
     Assignment.objects.create(pool=pool_v6, application=a_obj, cidr="2a05:ed80:100:1::/64")
+
+
+@pytest.mark.django_db
+def test_ip_assignment_basic_create(pool_v4):
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="Router-A")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    ip = IPAssignment.objects.create(
+        assignment=asgn, address="217.61.249.1", application=app,
+    )
+    ip.refresh_from_db()
+    assert str(ip.address) == "217.61.249.1"
+    assert ip.is_gateway is False
+    assert ip.label == ""

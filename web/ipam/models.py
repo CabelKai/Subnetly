@@ -43,9 +43,8 @@ class Application(models.Model):
 
 class Assignment(models.Model):
     pool = models.ForeignKey(Pool, on_delete=models.PROTECT, related_name="assignments")
-    application = models.ForeignKey(Application, on_delete=models.PROTECT, related_name="assignments")
+    applications = models.ManyToManyField(Application, related_name="assignments")
     cidr = CidrAddressField()
-    gateway = models.GenericIPAddressField(null=True, blank=True)
     notes = models.TextField(blank=True)
 
     objects = NetManager()
@@ -70,4 +69,56 @@ class Assignment(models.Model):
             )
 
     def __str__(self):
-        return f"{self.cidr} → {self.application.name}"
+        names = ", ".join(sorted(a.name for a in self.applications.all())) or "—"
+        return f"{self.cidr} → {names}"
+
+
+class IPAssignment(models.Model):
+    assignment = models.ForeignKey(
+        Assignment, on_delete=models.CASCADE, related_name="ip_assignments"
+    )
+    address = models.GenericIPAddressField()
+    application = models.ForeignKey(
+        Application, on_delete=models.PROTECT, related_name="ip_assignments"
+    )
+    is_gateway = models.BooleanField(default=False)
+    label = models.CharField(max_length=100, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["address"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["assignment", "address"],
+                name="ip_unique_per_assignment",
+            ),
+            models.UniqueConstraint(
+                fields=["assignment"],
+                condition=models.Q(is_gateway=True),
+                name="ip_one_gateway_per_assignment",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if not self.assignment_id or self.address is None:
+            return
+        import ipaddress
+        try:
+            net = ipaddress.ip_network(str(self.assignment.cidr), strict=False)
+            addr = ipaddress.ip_address(str(self.address))
+        except ValueError as exc:
+            raise ValidationError({"address": str(exc)})
+        if addr.version != net.version:
+            raise ValidationError({"address": f"IP-Familie passt nicht zum Subnetz (IPv{net.version})."})
+        if addr not in net:
+            raise ValidationError(
+                {"address": f"{addr} liegt nicht im Subnetz {self.assignment.cidr}."}
+            )
+        if self.application_id and not self.assignment.applications.filter(pk=self.application_id).exists():
+            raise ValidationError(
+                {"application": "Anwendung ist nicht in der Subnetz-Liste."}
+            )
+
+    def __str__(self):
+        return f"{self.address} → {self.application.name}"
