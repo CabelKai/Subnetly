@@ -99,3 +99,81 @@ def test_ip_assignment_basic_create(pool_v4):
     assert str(ip.address) == "217.61.249.1"
     assert ip.is_gateway is False
     assert ip.label == ""
+
+
+@pytest.mark.django_db
+def test_ip_assignment_address_must_be_in_cidr(pool_v4):
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="X")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    ip = IPAssignment(assignment=asgn, address="10.0.0.1", application=app)
+    with pytest.raises(ValidationError):
+        ip.full_clean()
+
+
+@pytest.mark.django_db
+def test_ip_assignment_application_must_be_in_subnet_apps(pool_v4):
+    from ipam.models import IPAssignment
+    a1 = Application.objects.create(name="A1")
+    a2 = Application.objects.create(name="A2")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(a1)
+    ip = IPAssignment(assignment=asgn, address="217.61.249.1", application=a2)
+    with pytest.raises(ValidationError) as exc:
+        ip.full_clean()
+    assert "Subnetz-Liste" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_ip_assignment_unique_per_assignment(pool_v4):
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="X")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    IPAssignment.objects.create(assignment=asgn, address="217.61.249.1", application=app)
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            IPAssignment.objects.create(
+                assignment=asgn, address="217.61.249.1", application=app,
+            )
+
+
+@pytest.mark.django_db
+def test_only_one_gateway_per_assignment(pool_v4):
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="X")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    IPAssignment.objects.create(
+        assignment=asgn, address="217.61.249.1", application=app, is_gateway=True,
+    )
+    with pytest.raises(IntegrityError):
+        with transaction.atomic():
+            IPAssignment.objects.create(
+                assignment=asgn, address="217.61.249.2", application=app, is_gateway=True,
+            )
+
+
+@pytest.mark.django_db
+def test_deleting_assignment_cascades_to_ip_assignments(pool_v4):
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="X")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    IPAssignment.objects.create(assignment=asgn, address="217.61.249.1", application=app)
+    assert IPAssignment.objects.count() == 1
+    asgn.delete()
+    assert IPAssignment.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_application_delete_protected_when_ip_assigned(pool_v4):
+    from django.db.models import ProtectedError
+    from ipam.models import IPAssignment
+    app = Application.objects.create(name="X")
+    asgn = Assignment.objects.create(pool=pool_v4, cidr="217.61.249.0/30")
+    asgn.applications.add(app)
+    IPAssignment.objects.create(assignment=asgn, address="217.61.249.1", application=app)
+    with pytest.raises(ProtectedError):
+        app.delete()
