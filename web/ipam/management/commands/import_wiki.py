@@ -65,14 +65,19 @@ class Command(BaseCommand):
                 continue
 
             if Assignment.objects.filter(pool=pool, cidr=str(ipnet.cidr)).exists():
+                # Bereits vorhanden — sicherstellen, dass die importierte App in der M2M-Liste ist
+                existing = Assignment.objects.get(pool=pool, cidr=str(ipnet.cidr))
+                if not existing.applications.filter(pk=application.pk).exists():
+                    existing.applications.add(application)
                 assignments_existing += 1
                 continue
 
-            a = Assignment(pool=pool, application=application, cidr=str(ipnet.cidr), notes=notes)
+            a = Assignment(pool=pool, cidr=str(ipnet.cidr), notes=notes)
             try:
                 a.full_clean()
                 with transaction.atomic():
                     a.save()
+                    a.applications.add(application)
                 assignments_new += 1
             except (ValidationError, IntegrityError) as e:
                 logger.warning(f"SKIP {cidr_str} ({app_name}): {e}")

@@ -48,3 +48,20 @@ def test_import_skips_entries_with_no_matching_pool(tmp_path, capsys):
     call_command("import_wiki", str(txt), stdout=out)
     assert Assignment.objects.count() == 0
     assert "übersprungen" in out.getvalue().lower() or "skip" in out.getvalue().lower()
+
+
+@pytest.mark.django_db
+def test_import_adds_new_app_to_existing_assignment(tmp_path):
+    Pool.objects.create(name="P", cidr="217.61.248.0/23")
+    bestand = Application.objects.create(name="Bestand")
+    s = Assignment.objects.create(pool=Pool.objects.first(), cidr="217.61.249.0/28")
+    s.applications.add(bestand)
+
+    txt = tmp_path / "wiki.txt"
+    txt.write_text("==== Neu ====\n217.61.249.0/28\n")
+    call_command("import_wiki", str(txt))
+
+    s.refresh_from_db()
+    names = set(s.applications.values_list("name", flat=True))
+    assert "Bestand" in names
+    assert "Neu" in names
