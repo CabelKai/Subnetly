@@ -8,11 +8,22 @@
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
 
+<a href="#main"
+   class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2
+          focus:z-[100] focus:bg-slate-900 focus:text-white
+          focus:px-4 focus:py-2 focus:rounded">
+  Zum Inhalt springen
+</a>
+
 <input type="checkbox" id="nav-toggle" class="peer/drawer hidden">
 
 <header class="bg-slate-800 text-slate-100 h-14 px-4 flex items-center gap-3 fixed top-0 left-0 right-0 z-50">
     {% if user.is_authenticated %}
-    <label for="nav-toggle" class="md:hidden p-2 -ml-2 cursor-pointer" aria-label="Menü öffnen">
+    <label for="nav-toggle"
+           role="button" tabindex="0"
+           aria-controls="sidebar-drawer" aria-expanded="false"
+           class="md:hidden p-3 -ml-1 cursor-pointer min-w-[44px] min-h-[44px] flex items-center"
+           aria-label="Menü öffnen">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
@@ -39,7 +50,7 @@
        class="md:hidden hidden peer-checked/drawer:block fixed inset-0 z-30 bg-black/40"
        aria-hidden="true"></label>
 
-<aside class="
+<aside id="sidebar-drawer" class="
     fixed top-14 bottom-0 left-0 z-40 w-72 -translate-x-full
     peer-checked/drawer:translate-x-0 transition-transform duration-200
     bg-white border-r border-slate-200 p-3 overflow-y-auto text-sm
@@ -49,9 +60,55 @@
 </aside>
 {% endif %}
 
-<main class="pt-14 px-4 pb-4 md:px-6 md:pb-6 {% if user.is_authenticated %}md:pl-[calc(18rem+1.5rem)]{% endif %} overflow-x-auto">
+<main id="main" class="pt-14 px-4 pb-4 md:px-6 md:pb-6 {% if user.is_authenticated %}md:pl-[calc(18rem+1.5rem)]{% endif %}">
+    {% if messages %}
+    <div role="status" aria-live="polite"
+         class="fixed top-16 right-4 z-50 flex flex-col gap-2 max-w-sm">
+      {% for m in messages %}
+      <div class="bg-white border-l-4 px-4 py-3 rounded shadow-lg text-sm
+                  {% if m.level_tag == 'success' %}border-green-500{% endif %}
+                  {% if m.level_tag == 'warning' %}border-amber-500{% endif %}
+                  {% if m.level_tag == 'error' %}border-red-500{% endif %}
+                  {% if m.level_tag == 'info' %}border-slate-500{% endif %}"
+           data-toast>
+        {{ m }}
+      </div>
+      {% endfor %}
+    </div>
+    <script>
+    setTimeout(() => document.querySelectorAll('[data-toast]').forEach(t => t.remove()), 4000);
+    </script>
+    {% endif %}
     {% block content %}{% endblock %}
 </main>
 
+{% if user.is_authenticated %}
+<script>
+(function () {
+  const toggle = document.getElementById('nav-toggle');
+  const btn = document.querySelector('label[for="nav-toggle"][role="button"]');
+  if (!toggle || !btn) return;
+
+  function sync() { btn.setAttribute('aria-expanded', toggle.checked); }
+  toggle.addEventListener('change', sync);
+  sync();
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.checked) {
+      toggle.checked = false;
+      sync();
+    }
+  });
+
+  btn.addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      toggle.checked = !toggle.checked;
+      sync();
+    }
+  });
+})();
+</script>
+{% endif %}
 </body>
 </html>

@@ -1,10 +1,11 @@
 <div class="flex md:hidden justify-end mb-2">
     <label for="nav-toggle"
-           class="cursor-pointer text-slate-400 hover:text-slate-700 text-2xl leading-none px-2 -mr-2"
+           class="cursor-pointer text-slate-400 hover:text-slate-700 text-2xl leading-none
+                  min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
            aria-label="Menü schließen">×</label>
 </div>
 <div class="mb-5">
-    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">IP-Pools</h3>
+    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">IP-Pools</h2>
     <ul class="space-y-1">
         {% for pool in sidebar_pools %}
             <li>
@@ -20,7 +21,7 @@
 </div>
 
 <div>
-    <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Anwendungen</h3>
+    <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Anwendungen</h2>
     {% for app in sidebar_apps %}
         <details class="mb-1" open>
             <summary class="cursor-pointer text-sm py-0.5">

@@ -13,18 +13,19 @@
             Bearbeiten
         </a>
         <a href="{% url 'ipam:assignment_new' pool.id %}"
-           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+           class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded text-sm font-medium">
             + Zuweisung
         </a>
+        {% include "_delete_dialog.html" %}
     </div>
 </div>
 
 {% if pool.ip_version == 4 %}
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1 items-stretch overflow-x-auto">
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
-                <div class="group relative rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                     style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto; background-color: {{ b.color }};"
+                <div class="group relative grow rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                     style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; background-color: {{ b.color }};"
                      title="{{ b.app_names }}">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
                        class="block no-underline text-slate-900">
@@ -39,8 +40,8 @@
                 </div>
             {% else %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
-                   class="group relative block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline"
-                   style="width: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; flex: 0 0 auto;">
+                   class="group relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline"
+                   style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%;">
                     <span class="block">frei</span>
                     <span class="font-mono block">{{ b.size }} IPs</span>
                     {% free_suggestions_tooltip_panel b.suggestions b.size %}

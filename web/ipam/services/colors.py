@@ -1,25 +1,25 @@
 import hashlib
 
-# Palette tuned for readable dark text on these light backgrounds.
-# 16 entries (power-of-two mod for good hash distribution). Skewed warm,
-# only one green and one blue, so the grid doesn't drown in cool tones.
+# Tailwind 200-tone palette: all colors meet WCAG AAA contrast against
+# text-slate-900 (10:1 or better). 16 entries (power-of-two mod for good
+# hash distribution).
 _PALETTE = [
-    "#FCA5A5",  # red-300
-    "#F87171",  # red-400
-    "#FDBA74",  # orange-300
-    "#FB923C",  # orange-400
-    "#FCD34D",  # amber-300
-    "#FDE047",  # yellow-300
-    "#E4D88A",  # warm khaki
-    "#BEF264",  # lime-300       (only "yellowy-green")
-    "#86EFAC",  # green-300      (only true green)
-    "#5EEAD4",  # teal-300
-    "#7DD3FC",  # sky-300        (only blue)
-    "#C4B5FD",  # violet-300
+    "#FECACA",  # red-200
+    "#FED7AA",  # orange-200
+    "#FEF08A",  # yellow-200
+    "#D9F99D",  # lime-200
+    "#BBF7D0",  # green-200
+    "#A7F3D0",  # emerald-200
+    "#99F6E4",  # teal-200
+    "#BAE6FD",  # sky-200
+    "#BFDBFE",  # blue-200
+    "#C7D2FE",  # indigo-200
+    "#DDD6FE",  # violet-200
     "#E9D5FF",  # purple-200
-    "#F0ABFC",  # fuchsia-300
-    "#F9A8D4",  # pink-300
-    "#FB7185",  # rose-400
+    "#F5D0FE",  # fuchsia-200
+    "#FBCFE8",  # pink-200
+    "#FECDD3",  # rose-200
+    "#E4D88A",  # warm khaki (kept for variety)
 ]
 
 

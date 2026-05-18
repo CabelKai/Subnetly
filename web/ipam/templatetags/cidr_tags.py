@@ -37,7 +37,7 @@ def _panel_html(lines):
         for k, v in lines
     )
     return (
-        '<span class="invisible group-hover:visible absolute bottom-full left-0 mb-1 '
+        '<span class="hidden group-hover:block absolute bottom-full left-0 mb-1 '
         'px-3 py-2 bg-slate-900 text-white text-xs font-mono rounded shadow-lg '
         'whitespace-nowrap z-50 normal-case font-normal pointer-events-none">'
         f'{body}'
@@ -84,7 +84,7 @@ def free_suggestions_tooltip_panel(suggestions, size):
         )
     body = "<br>".join(lines)
     return mark_safe(
-        '<span class="invisible group-hover:visible absolute bottom-full left-0 mb-1 '
+        '<span class="hidden group-hover:block absolute bottom-full left-0 mb-1 '
         'px-3 py-2 bg-slate-900 text-white text-xs font-mono rounded shadow-lg '
         'whitespace-nowrap z-50 normal-case font-normal pointer-events-none">'
         f'{body}'

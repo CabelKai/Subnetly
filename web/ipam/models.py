@@ -119,6 +119,12 @@ class IPAssignment(models.Model):
             raise ValidationError(
                 {"application": "Anwendung ist nicht in der Subnetz-Liste."}
             )
+        from .services.ip_list import reserved_kind_for
+        kind = reserved_kind_for(self.assignment.cidr, addr)
+        if kind == "network":
+            raise ValidationError({"address": "Netzwerk-Adresse ist reserviert."})
+        if kind == "broadcast":
+            raise ValidationError({"address": "Broadcast-Adresse ist reserviert."})
 
     def __str__(self):
         return f"{self.address} → {self.application.name}"

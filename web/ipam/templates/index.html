@@ -5,7 +5,7 @@
 <div class="flex items-center justify-between mb-4">
     <h1 class="text-2xl font-semibold">Pool-Übersicht</h1>
     <a href="{% url 'ipam:pool_new' %}"
-       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
+       class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded text-sm font-medium">
         + Pool
     </a>
 </div>
@@ -23,7 +23,7 @@
         </div>
     </a>
     {% empty %}
-    <p class="text-slate-500">Noch keine Pools. Im <a href="/admin/" class="underline">Admin</a> anlegen.</p>
+    <p class="text-slate-500">Noch keine Pools. <a href="{% url 'ipam:pool_new' %}" class="underline">Pool anlegen</a>.</p>
     {% endfor %}
 </div>
 {% endblock %}

@@ -12,13 +12,22 @@ class ApplicationForm(forms.ModelForm):
         fields = ["name", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            field.widget.attrs.setdefault(
+                "class",
+                "w-full border border-slate-300 rounded px-3 py-2 text-sm "
+                "focus:outline-none focus:ring-2 focus:ring-slate-400",
+            )
+
 
 class AssignmentForm(forms.ModelForm):
     """ModelForm for Assignment, excluding `pool` (injected from URL)."""
 
     class Meta:
         model = Assignment
-        fields = ["applications", "cidr", "notes"]
+        fields = ["cidr", "applications", "notes"]
         widgets = {
             "notes": forms.Textarea(attrs={"rows": 3}),
             "applications": PillCheckboxSelectMultiple(),
@@ -27,6 +36,7 @@ class AssignmentForm(forms.ModelForm):
     def __init__(self, *args, pool=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.pool = pool
+        self.fields["applications"].label = "Anwendungen, Hosts, Router:"
         for name, field in self.fields.items():
             if name == "applications":
                 continue
@@ -87,6 +97,40 @@ class PoolForm(forms.ModelForm):
         fields = ["name", "cidr", "notes"]
         widgets = {"notes": forms.Textarea(attrs={"rows": 3})}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            field.widget.attrs.setdefault(
+                "class",
+                "w-full border border-slate-300 rounded px-3 py-2 text-sm "
+                "focus:outline-none focus:ring-2 focus:ring-slate-400",
+            )
+
+    def clean_cidr(self):
+        new_cidr = self.cleaned_data["cidr"]
+        if not (self.instance and self.instance.pk):
+            return new_cidr
+        new_net = IPNetwork(str(new_cidr))
+        outside = []
+        wrong_family = []
+        for a in self.instance.assignments.all():
+            a_net = IPNetwork(str(a.cidr))
+            if a_net.version != new_net.version:
+                wrong_family.append(str(a.cidr))
+            elif a_net not in new_net:
+                outside.append(str(a.cidr))
+        if wrong_family:
+            raise ValidationError(
+                f"IP-Familie wechseln nicht möglich — bestehende Zuweisungen "
+                f"in anderer Familie: {', '.join(wrong_family)}."
+            )
+        if outside:
+            raise ValidationError(
+                f"Diese Zuweisungen lägen außerhalb der neuen CIDR: "
+                f"{', '.join(outside)}. Erst die Zuweisungen anpassen."
+            )
+        return new_cidr
+
 
 class IPAssignmentForm(forms.ModelForm):
     class Meta:
@@ -104,10 +148,16 @@ class IPAssignmentForm(forms.ModelForm):
         for name, field in self.fields.items():
             if name == "is_gateway":
                 continue
+            extra = " js-ip-app-select" if name == "application" else ""
             field.widget.attrs.setdefault(
                 "class",
-                "w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-400",
+                "w-full border border-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-400" + extra,
             )
+        self.fields["address"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"[0-9a-fA-F:.]+",
+            "placeholder": "z.B. 10.0.0.1",
+        })
 
     def clean(self):
         cleaned = super().clean()

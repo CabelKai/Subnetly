@@ -137,3 +137,16 @@ def test_free_block_carries_suggestions_not_misleading_cidr():
     assert len(suggestions) <= 3
     assert suggestions[0]["prefix"] == 23
     assert suggestions[0]["cidr"] == "45.151.170.0/23"
+
+
+def test_palette_uses_tailwind_200_tones():
+    """B1: Color palette uses 200-tone Tailwind colors for WCAG AAA contrast vs slate-900."""
+    from ipam.services.colors import _PALETTE
+    # Spot-check three known 200-tone hex values
+    assert "#FECACA" in _PALETTE  # red-200
+    assert "#BBF7D0" in _PALETTE  # green-200
+    assert "#BFDBFE" in _PALETTE  # blue-200
+    # Make sure none of the old 300-tone hex values remain
+    assert "#FCA5A5" not in _PALETTE  # red-300 (old)
+    assert "#86EFAC" not in _PALETTE  # green-300 (old)
+    assert "#7DD3FC" not in _PALETTE  # sky-300 (old)

@@ -7,8 +7,10 @@
     </h1>
 
     <div class="mb-6 bg-slate-100 border border-slate-300 rounded px-4 py-3 text-sm text-slate-700">
-        <span class="font-semibold">Pool:</span>
-        {{ pool.name }} &mdash; <code class="font-mono">{{ pool.cidr }}</code>
+        <span class="font-semibold">Subnetz aus dem Pool:</span>
+        <code class="font-mono">{{ pool.cidr }}</code> &mdash;
+        <code class="font-mono">{{ pool_first_ip }}</code> &mdash;
+        <code class="font-mono">{{ pool_last_ip }}</code>
     </div>
 
     {% if form.non_field_errors %}
@@ -33,7 +35,7 @@
         </div>
         {% endfor %}
         <div class="flex items-center gap-4 mt-2">
-            <button type="submit" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium px-5 py-2 rounded">
+            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2 rounded">
                 Subnetz speichern
             </button>
             <a href="{% url 'ipam:pool_detail' pool.pk %}" class="text-sm text-slate-500 hover:text-slate-700 underline">
@@ -43,6 +45,10 @@
     </form>
 
     {% if assignment %}
+    <div class="mb-6 flex justify-end">
+        {% include "_delete_dialog.html" %}
+    </div>
+
     <h2 class="text-lg font-semibold text-slate-800 mb-2">IP-Zuordnungen</h2>
 
     {% if not assignment.applications.exists %}
@@ -51,7 +57,9 @@
     </div>
     {% else %}
 
-    <div class="md:bg-white md:border md:border-slate-200 md:rounded md:overflow-x-auto">
+    <form method="post" action="{% url 'ipam:ip_assignment_save_bulk' assignment.id %}"
+          class="md:bg-white md:border md:border-slate-200 md:rounded md:overflow-x-auto">
+        {% csrf_token %}
         <div class="md:grid md:items-center text-xs"
              style="grid-template-columns: auto auto auto auto auto auto;">
 
@@ -63,54 +71,61 @@
             <div class="hidden md:block bg-slate-100 text-slate-600 px-2 py-2 font-semibold">Aktion</div>
 
             {% for row in ip_rows %}
-            <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}"
-                  class="block md:contents bg-white border md:border-0 rounded md:rounded-none p-3 md:p-0 mb-2 md:mb-0">
-                {% csrf_token %}
-
-                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center md:block font-mono">
+            {% if row.reserved_kind %}
+            <div class="block md:contents bg-slate-100 border-l-4 border-l-slate-300 md:border-l-0 rounded md:rounded-none p-3 md:p-0 mb-2 md:mb-0">
+                <div class="md:px-2 md:py-2 md:border-t flex justify-between items-center gap-3 md:block font-mono text-slate-500">
                     <span class="md:hidden text-xs font-semibold text-slate-500">Adresse</span>
+                    <span>{{ row.address }}</span>
+                </div>
+                <div class="md:px-2 md:py-2 md:border-t md:col-span-5 text-slate-600 italic font-medium">
+                    {% if row.reserved_kind == "network" %}Netzwerk-Adresse — reserviert{% else %}Broadcast-Adresse — reserviert{% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="block md:contents bg-white border md:border-0 rounded md:rounded-none p-3 md:p-0 mb-2 md:mb-0">
+
+                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center gap-3 md:block font-mono">
                     {% if row.is_full_mode %}
-                        <input type="hidden" name="address" value="{{ row.address }}">
+                        <span class="md:hidden text-xs font-semibold text-slate-500">Adresse</span>
+                        <input type="hidden" name="{{ row.form.prefix }}-address" value="{{ row.address }}">
                         <span>{{ row.address }}</span>
                     {% else %}
-                        <input type="text" name="address" value="{{ row.form.address.value|default:'' }}"
-                               class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+                        <label class="md:hidden text-xs font-semibold text-slate-500" for="{{ row.form.address.id_for_label }}">Adresse</label>
+                        {{ row.form.address }}
                     {% endif %}
                 </div>
 
-                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Anwendung</span>
+                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                    <label class="md:hidden text-xs font-semibold text-slate-500" for="{{ row.form.application.id_for_label }}">Anwendung</label>
                     {{ row.form.application }}
                 </div>
 
-                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Gateway</span>
+                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                    <label class="md:hidden text-xs font-semibold text-slate-500" for="{{ row.form.is_gateway.id_for_label }}">Gateway</label>
                     {{ row.form.is_gateway }}
                 </div>
 
-                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Label</span>
+                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                    <label class="md:hidden text-xs font-semibold text-slate-500" for="{{ row.form.label.id_for_label }}">Label</label>
                     {{ row.form.label }}
                 </div>
 
-                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Notes</span>
+                <div class="md:px-2 md:py-1 md:border-t flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                    <label class="md:hidden text-xs font-semibold text-slate-500" for="{{ row.form.notes.id_for_label }}">Notes</label>
                     {{ row.form.notes }}
                 </div>
 
                 <div class="md:px-2 md:py-1 md:border-t flex justify-end items-center mt-3 md:mt-0 gap-2 whitespace-nowrap">
-                    <button type="submit" name="action" value="save"
-                            class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 md:py-1 rounded">
-                        Speichern
-                    </button>
                     {% if row.ip_assignment %}
-                    <button type="submit" name="action" value="delete" formnovalidate
-                            class="text-red-600 hover:underline bg-transparent border-0 cursor-pointer p-2 md:p-0"
+                    <button type="submit" formnovalidate
+                            formaction="{% url 'ipam:ip_assignment_delete' assignment.id row.ip_assignment.id %}"
+                            class="text-red-600 hover:underline bg-transparent border-0 cursor-pointer
+                                   min-w-[44px] min-h-[44px] flex items-center justify-center
+                                   md:min-w-0 md:min-h-0 md:block md:p-0"
                             title="IP-Zuordnung löschen">×</button>
-                    <input type="hidden" name="ip_id" value="{{ row.ip_assignment.id }}">
                     {% endif %}
                 </div>
-            </form>
+            </div>
 
             {% if row.form.errors %}
             <div class="bg-red-50 px-2 py-2 text-red-700 text-xs md:col-span-6 mb-2 md:mb-0">
@@ -120,53 +135,128 @@
                 {% endfor %}
             </div>
             {% endif %}
+            {% endif %}
 
             {% empty %}
             <div class="px-2 py-4 text-center text-slate-400 italic md:col-span-6">
                 Keine IPs zugeordnet.
             </div>
             {% endfor %}
-
-            {% if is_sparse_mode %}
-            <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}"
-                  class="block md:contents bg-slate-50 border md:border-0 rounded md:rounded-none p-3 md:p-0 mb-2 md:mb-0">
-                {% csrf_token %}
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-between items-center md:block">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Adresse</span>
-                    <input type="text" name="address" placeholder="z.B. 10.0.0.1"
-                           class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
-                </div>
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Anwendung</span>
-                    <select name="application" class="border border-slate-300 rounded px-2 py-1 text-xs">
-                        <option value="">---</option>
-                        {% for app in assignment.applications.all %}
-                        <option value="{{ app.id }}">{{ app.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Gateway</span>
-                    <input type="checkbox" name="is_gateway">
-                </div>
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Label</span>
-                    <input type="text" name="label" class="border border-slate-300 rounded px-2 py-1 text-xs w-32">
-                </div>
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-between items-center md:block mt-2 md:mt-0">
-                    <span class="md:hidden text-xs font-semibold text-slate-500">Notes</span>
-                    <input type="text" name="notes" class="border border-slate-300 rounded px-2 py-1 text-xs">
-                </div>
-                <div class="md:px-2 md:py-1 md:border-t-2 md:border-slate-300 md:bg-slate-50 flex justify-end items-center mt-3 md:mt-0">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 md:py-1 rounded">
-                        + IP hinzufügen
-                    </button>
-                </div>
-            </form>
-            {% endif %}
         </div>
-    </div>
+
+        <div class="border-t border-slate-200 px-3 py-3 md:flex md:justify-end bg-white">
+            <button type="submit" formnovalidate
+                    class="w-full md:w-auto bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2 rounded">
+                Alle IP-Zuordnungen speichern
+            </button>
+        </div>
+    </form>
+
+    {% if is_sparse_mode %}
+    <form method="post" action="{% url 'ipam:ip_assignment_save' assignment.id %}"
+          class="mt-4 md:bg-slate-50 md:border md:border-slate-300 md:rounded md:overflow-x-auto">
+        {% csrf_token %}
+        <div class="md:grid md:items-center text-xs"
+             style="grid-template-columns: auto auto auto auto auto auto;">
+            <div class="md:px-2 md:py-2 md:bg-slate-100 md:col-span-6 font-semibold text-slate-600">
+                Neue IP hinzufügen
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-between items-center gap-3 md:block">
+                <label class="md:hidden text-xs font-semibold text-slate-500" for="addnew-address">Adresse</label>
+                <input type="text" id="addnew-address" name="address" placeholder="z.B. 10.0.0.1"
+                       inputmode="numeric" pattern="[0-9a-fA-F:.]+"
+                       class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                <label class="md:hidden text-xs font-semibold text-slate-500" for="addnew-application">Anwendung</label>
+                <select name="application" id="addnew-application" class="js-ip-app-select border border-slate-300 rounded px-2 py-1 text-xs">
+                    <option value="">---</option>
+                    {% for app in assignment.applications.all %}
+                    <option value="{{ app.id }}">{{ app.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                <label class="md:hidden text-xs font-semibold text-slate-500" for="addnew-is_gateway">Gateway</label>
+                <input type="checkbox" name="is_gateway" id="addnew-is_gateway">
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                <label class="md:hidden text-xs font-semibold text-slate-500" for="addnew-label">Label</label>
+                <input type="text" name="label" id="addnew-label" class="border border-slate-300 rounded px-2 py-1 text-xs w-32">
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-between items-center gap-3 md:block mt-2 md:mt-0">
+                <label class="md:hidden text-xs font-semibold text-slate-500" for="addnew-notes">Notes</label>
+                <input type="text" name="notes" id="addnew-notes" class="border border-slate-300 rounded px-2 py-1 text-xs">
+            </div>
+            <div class="md:px-2 md:py-1 flex justify-end items-center mt-3 md:mt-0">
+                <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 md:py-1 rounded">
+                    + IP hinzufügen
+                </button>
+            </div>
+        </div>
+    </form>
+    {% endif %}
     {% endif %}
     {% endif %}
 </div>
+
+{% if assignment %}
+<script>
+(function () {
+    function getCheckedApps() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][name="applications"]');
+        const apps = [];
+        checkboxes.forEach(cb => {
+            if (!cb.checked) return;
+            // Label is the next sibling label or wrapping label
+            let label = '';
+            if (cb.id) {
+                const l = document.querySelector('label[for="' + cb.id + '"]');
+                if (l) label = l.textContent.trim();
+            }
+            if (!label && cb.parentElement && cb.parentElement.tagName === 'LABEL') {
+                label = cb.parentElement.textContent.trim();
+            }
+            apps.push({id: cb.value, name: label || cb.value});
+        });
+        return apps;
+    }
+
+    function rebuildAppOptions() {
+        const apps = getCheckedApps();
+        document.querySelectorAll('select.js-ip-app-select').forEach(sel => {
+            const current = sel.value;
+            sel.innerHTML = '';
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.textContent = '---';
+            sel.appendChild(blank);
+            apps.forEach(app => {
+                const opt = document.createElement('option');
+                opt.value = app.id;
+                opt.textContent = app.name;
+                if (app.id === current) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        });
+    }
+
+    document.querySelectorAll('input[type="checkbox"][name="applications"]').forEach(cb => {
+        cb.addEventListener('change', rebuildAppOptions);
+    });
+    rebuildAppOptions();
+})();
+
+(function () {
+    const form = document.querySelector('form[action$="/save_bulk/"]');
+    if (!form) return;
+    let dirty = false;
+    form.addEventListener('input', () => { dirty = true; });
+    form.addEventListener('submit', () => { dirty = false; });
+    window.addEventListener('beforeunload', (e) => {
+        if (dirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

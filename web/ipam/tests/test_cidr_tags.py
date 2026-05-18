@@ -78,7 +78,7 @@ def render_panel(cidr):
 def test_panel_ipv4_returns_only_inner_span():
     out = render_panel("217.61.249.0/28")
     # Inner panel span is present
-    assert "group-hover:visible" in out
+    assert "group-hover:block" in out
     assert "Network" in out
     assert "Nutzbare IPs" in out
     assert "Broadcast" in out
@@ -89,9 +89,21 @@ def test_panel_ipv4_returns_only_inner_span():
 
 def test_panel_ipv6_returns_only_inner_span():
     out = render_panel("2a05:ed80:100:400::/64")
-    assert "group-hover:visible" in out
+    assert "group-hover:block" in out
     assert "2^64" in out
     assert "2a05:ed80:100:400::/64" not in out
+
+
+def test_panel_uses_display_none_not_visibility_hidden_to_avoid_layout_overflow():
+    """Regression guard for horizontal-scrollbar bug: tooltip panels must use
+    `display: none` (Tailwind `hidden`), not `visibility: hidden` (Tailwind
+    `invisible`). visibility:hidden keeps the absolutely-positioned tooltip
+    in the layout, and its `whitespace-nowrap` content extends past <main>'s
+    right edge, triggering overflow-x-auto's scrollbar even when the page
+    has nothing else to scroll."""
+    out = render_panel("10.0.0.0/24")
+    assert "hidden" in out  # display: none default
+    assert "invisible" not in out  # NOT visibility: hidden
 
 
 def test_panel_invalid_returns_empty_string():
@@ -115,7 +127,7 @@ def test_free_suggestions_panel_renders_list():
     assert "Vorschläge" in out
     assert "/23" in out and "45.151.170.0" in out and "512 IPs" in out
     assert "/24" in out and "45.151.169.0" in out and "256 IPs" in out
-    assert "group-hover:visible" in out
+    assert "group-hover:block" in out
 
 
 def test_free_suggestions_panel_empty_returns_empty():

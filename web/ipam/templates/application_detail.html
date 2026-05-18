@@ -4,10 +4,13 @@
 {% block content %}
 <div class="flex items-center justify-between mb-1 gap-2">
     <h1 class="text-2xl font-semibold truncate">{{ application.name }}</h1>
-    <a href="{% url 'ipam:application_edit' application.id %}"
-       class="bg-slate-200 hover:bg-slate-300 text-slate-900 px-3 py-1 rounded text-sm whitespace-nowrap">
-        Bearbeiten
-    </a>
+    <div class="flex gap-2">
+        <a href="{% url 'ipam:application_edit' application.id %}"
+           class="bg-slate-200 hover:bg-slate-300 text-slate-900 px-3 py-1 rounded text-sm whitespace-nowrap">
+            Bearbeiten
+        </a>
+        {% include "_delete_dialog.html" %}
+    </div>
 </div>
 {% if application.notes %}<p class="text-slate-700 mb-3">{{ application.notes }}</p>{% endif %}
 

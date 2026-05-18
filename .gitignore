@@ -29,3 +29,6 @@ Thumbs.db
 
 # Superpowers brainstorming mockups
 .superpowers/
+
+# Local DB backups
+backups/

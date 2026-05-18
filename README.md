@@ -26,18 +26,7 @@ Im Browser unter `http://<host>:8080/login/` einloggen.
 
 ## Pools anlegen
 
-Über `/admin/`: neuer `Pool` mit CIDR (z.B. `217.61.248.0/23`),
-optional `block_prefix` (Auflösung der Blockansicht, z.B. `30`).
-
-## Wiki-Import
-
-1. Wiki-Dump als Textdatei nach `docs/wiki-export.txt` legen.
-2. Import laufen lassen:
-   ```bash
-   docker compose exec web python manage.py import_wiki docs/wiki-export.txt
-   ```
-   Übersprungene Einträge stehen im Logfile `import_wiki_<ts>.log`
-   im Arbeitsverzeichnis des Containers.
+Über `/admin/` oder die UI: neuer `Pool` mit CIDR (z.B. `217.61.248.0/23`).
 
 ## Backups
 
