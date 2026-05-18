@@ -32,15 +32,13 @@ def color_for(name: str) -> str:
 
 
 def colors_for_set(names) -> dict:
-    """Assign a distinct color per name from the palette, for a set of names.
+    """Stable hex color per application name.
 
-    Names are sorted alphabetically (case-insensitive) and then assigned
-    palette entries by position — so within a single view, no two names share
-    a color as long as the count fits in the palette. Beyond palette length,
-    colors wrap.
+    Each name independently hashes to a palette entry via `color_for()`.
+    Collisions are possible — two names may share a color — but each name's
+    color is stable regardless of which other names are present.
 
-    The same set of names always produces the same color mapping (sort makes
-    it deterministic).
+    This trades distinctness for stability so that adding an application
+    does not shift existing block colors on the pool-detail grid.
     """
-    unique = sorted({n for n in names if n}, key=str.casefold)
-    return {n: _PALETTE[i % len(_PALETTE)] for i, n in enumerate(unique)}
+    return {n: color_for(n) for n in names if n}

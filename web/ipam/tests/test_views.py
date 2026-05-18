@@ -7,8 +7,8 @@ from ipam.models import Application, Assignment, Pool
 @pytest.fixture
 def auth_client(db, client):
     User = get_user_model()
-    User.objects.create_user(username="tester", password="pw")
-    client.login(username="tester", password="pw")
+    u = User.objects.create_user(username="tester", password="pw")
+    client.force_login(u)
     return client
 
 
@@ -487,6 +487,7 @@ def test_ip_assignment_save_renders_errors_inline_on_validation_failure(auth_cli
     s = Assignment.objects.create(pool=p, cidr="217.61.249.0/30")
     s.applications.add(a)
 
+    # 10.0.0.1 is outside 217.61.249.0/30 -> validation error on `address`
     response = auth_client.post(f"/subnet/{s.id}/ip/save/", {
         "address": "10.0.0.1",
         "application": a.id,
@@ -495,7 +496,13 @@ def test_ip_assignment_save_renders_errors_inline_on_validation_failure(auth_cli
     })
     assert response.status_code == 200
     body = response.content.decode()
-    assert "Subnetz" in body
+    # The errored form must be re-rendered with a prefixed field name so
+    # the bulk-save grid's hidden `{{ row.form.prefix }}-address` resolves
+    # correctly; an unprefixed `name="-address"` would be the bug.
+    assert 'name="r' in body
+    assert 'name="-' not in body
+    # The user's address input must be preserved at the matching prefix.
+    assert 'value="10.0.0.1"' in body
 
 
 @pytest.mark.django_db
@@ -1106,3 +1113,21 @@ def test_ipv4_grid_container_has_overflow_x_auto(auth_client):
     response = auth_client.get(f"/pool/{p.id}/")
     body = response.content.decode()
     assert "flex flex-wrap gap-1 items-stretch overflow-x-auto" in body
+
+
+@pytest.mark.django_db
+def test_login_locks_out_after_5_failed_attempts(db, client):
+    """Brute-force guard: after AXES_FAILURE_LIMIT=5 wrong passwords for a
+    given username, axes blocks further attempts even with the right one."""
+    User = get_user_model()
+    User.objects.create_user(username="victim", password="correct-pw")
+    for _ in range(5):
+        client.post("/login/", {"username": "victim", "password": "wrong"})
+    # 6th attempt with the correct password must NOT authenticate.
+    resp = client.post(
+        "/login/", {"username": "victim", "password": "correct-pw"},
+        follow=False,
+    )
+    # axes returns 403 (configurable) — anything except a 302 redirect to the
+    # post-login page proves the lockout is active.
+    assert resp.status_code != 302 or resp.url != "/"

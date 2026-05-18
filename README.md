@@ -44,6 +44,24 @@ gunzip -c subnetly_<ts>.sql.gz | docker compose exec -T db psql -U "${DB_USER}" 
 docker compose exec web pytest -v
 ```
 
+## Dev-Tooling
+
+Pre-commit (Linting + Formatierung via ruff):
+
+```bash
+pip install pre-commit
+pre-commit install        # einmalig pro Clone
+pre-commit run --all-files
+```
+
+Python-Deps werden via `pip-compile` gepinnt: `requirements.in` enthält
+die High-Level-Constraints, `requirements.txt` ist die aufgelöste
+Lockdatei (auto-generated, nicht von Hand editieren). Neu auflösen:
+
+```bash
+docker compose exec web pip-compile requirements.in
+```
+
 ## Reverse-Proxy-Beispiel (nginx, extern)
 
 ```nginx

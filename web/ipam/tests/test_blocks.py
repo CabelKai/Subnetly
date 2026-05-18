@@ -59,12 +59,20 @@ def test_color_returns_hex():
     assert c.startswith("#") and len(c) == 7
 
 
-def test_colors_for_set_unique_within_palette_size():
-    # 16 distinct names — all should map to distinct colors (palette size = 16)
-    names = [f"App{i:02d}" for i in range(16)]
+def test_colors_for_set_stable_when_other_names_added():
+    # Adding a new application must NOT change colors of existing ones.
+    before = colors_for_set(["BINSS", "Falcon"])
+    after = colors_for_set(["BINSS", "Falcon", "SWE"])
+    assert before["BINSS"] == after["BINSS"]
+    assert before["Falcon"] == after["Falcon"]
+
+
+def test_colors_for_set_equals_color_for_each_name():
+    # The set mapping uses the same per-name stable hash as color_for().
+    names = ["BINSS", "Falcon", "SWE"]
     mapping = colors_for_set(names)
-    assert len(mapping) == 16
-    assert len(set(mapping.values())) == 16
+    for n in names:
+        assert mapping[n] == color_for(n)
 
 
 def test_colors_for_set_deterministic_regardless_of_input_order():
@@ -76,13 +84,6 @@ def test_colors_for_set_deterministic_regardless_of_input_order():
 def test_colors_for_set_ignores_empty_names():
     mapping = colors_for_set(["BINSS", "", None, "Falcon"])
     assert set(mapping.keys()) == {"BINSS", "Falcon"}
-
-
-def test_colors_for_set_wraps_beyond_palette():
-    # 18 names → at least 2 share a color (16-slot palette)
-    names = [f"App{i:02d}" for i in range(18)]
-    mapping = colors_for_set(names)
-    assert len(set(mapping.values())) == 16  # all 16 used, but wrap causes 2 duplicates
 
 
 def test_largest_aligned_subnets_perfect_alignment():

@@ -1,9 +1,15 @@
 from django import template
+from django.conf import settings
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from netaddr import IPNetwork
 
 register = template.Library()
+
+
+@register.simple_tag
+def django_debug():
+    return settings.DEBUG
 
 
 def _tooltip_lines(cidr):

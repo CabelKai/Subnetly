@@ -310,26 +310,49 @@ def ip_assignment_save(request, assignment_id):
         messages.success(request, "IP-Zuordnung gespeichert.")
         return redirect("ipam:assignment_edit", assignment_id=assignment_id)
 
-    # Error path: render edit page directly with the invalid form inline
+    # Error path: re-render edit page with all row forms prefixed so the
+    # bulk-save grid's hidden inputs (e.g. `{{ row.form.prefix }}-address`)
+    # resolve to valid field names. The errored row gets rebound to its
+    # matching `r{i}` prefix so the user's input + errors land in the
+    # correct grid cell instead of with an empty prefix.
     rows = build_ip_rows(assignment)
-    replaced = False
-    for row in rows:
-        if row["address"] == address:
-            row["form"] = form
-            replaced = True
+    target_index = next(
+        (i for i, r in enumerate(rows)
+         if not r.get("reserved_kind") and r["address"] == address),
+        None,
+    )
+    if target_index is None:
+        target_index = len(rows)
+        rows.append({
+            "address": address,
+            "ip_assignment": None,
+            "is_full_mode": False,
+            "reserved_kind": None,
+        })
+    target_prefix = f"r{target_index}"
+    prefixed_data = {
+        f"{target_prefix}-{k}": request.POST.get(k, "")
+        for k in ("address", "application", "is_gateway", "label", "notes")
+    }
+    errored_form = IPAssignmentForm(
+        prefixed_data, instance=instance, assignment=assignment,
+        prefix=target_prefix,
+    )
+    errored_form.is_valid()  # populate .errors at the prefixed bind
+
+    for i, row in enumerate(rows):
+        if row.get("reserved_kind"):
+            row["form"] = None
+            continue
+        if i == target_index:
+            row["form"] = errored_form
         else:
             row["form"] = IPAssignmentForm(
                 instance=row["ip_assignment"],
                 assignment=assignment,
                 initial=None if row["ip_assignment"] else {"address": row["address"]},
+                prefix=f"r{i}",
             )
-    if not replaced:
-        rows.append({
-            "address": address,
-            "ip_assignment": None,
-            "form": form,
-            "is_full_mode": False,
-        })
 
     subnet_form = AssignmentForm(instance=assignment, pool=assignment.pool)
     is_sparse_mode = IPNetwork(str(assignment.cidr)).size > 32

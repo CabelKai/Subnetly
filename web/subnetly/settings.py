@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "netfields",
+    "axes",
     "ipam",
 ]
 
@@ -52,7 +53,19 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+# django-axes: brute-force protection on the login form.
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_PARAMETERS = ["username"]
+AXES_RESET_ON_SUCCESS = True
 
 ROOT_URLCONF = "subnetly.urls"
 
@@ -99,6 +112,10 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# Tailwind CSS is built into /srv/tailwind/static/ in the Docker image so
+# the bind-mount on /app does not shadow it. Only present in built images.
+_TAILWIND_BUILD = Path("/srv/tailwind/static")
+STATICFILES_DIRS = [_TAILWIND_BUILD] if _TAILWIND_BUILD.exists() else []
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
