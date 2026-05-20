@@ -18,12 +18,13 @@ def _next_info_id():
 
 
 def _info_panel_html(lines, panel_id):
+    safe_id = escape(str(panel_id))
     body = "<br>".join(
         f"<span class='inline-block w-28'>{escape(k)}:</span>{escape(v)}"
         for k, v in lines
     )
     return (
-        f'<div popover="auto" id="{panel_id}" '
+        f'<div popover="auto" id="{safe_id}" '
         'class="info-panel bg-slate-900 text-white text-xs font-mono '
         'rounded shadow-lg px-3 py-2 normal-case font-normal m-0 '
         'max-w-xs whitespace-nowrap">'

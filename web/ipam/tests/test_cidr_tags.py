@@ -189,3 +189,10 @@ def test_cidr_info_panel_ids_unique_across_calls():
     ids = re.findall(r'popover="auto" id="([^"]+)"', out)
     assert len(ids) == 2
     assert ids[0] != ids[1]
+
+
+def test_cidr_info_trigger_references_panel_id():
+    out = render_tpl("{% cidr_info '10.0.0.0/24' %}")
+    trigger_id = re.search(r'data-info-trigger="([^"]+)"', out).group(1)
+    panel_id = re.search(r'popover="auto" id="([^"]+)"', out).group(1)
+    assert trigger_id == panel_id
