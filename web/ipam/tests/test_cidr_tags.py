@@ -132,3 +132,60 @@ def test_free_suggestions_panel_renders_list():
 
 def test_free_suggestions_panel_empty_returns_empty():
     assert render_free_panel([], 0) == ""
+
+
+# ------------------------------------------------------------------
+# Generic helper for the new info-popover tags (Task 1+)
+# ------------------------------------------------------------------
+import re  # noqa: E402
+
+def render_tpl(template_str, ctx=None):
+    t = Template("{% load cidr_tags %}" + template_str)
+    return t.render(Context(ctx or {}))
+
+
+def test_cidr_info_renders_trigger_and_panel():
+    out = render_tpl("{% cidr_info '10.0.0.0/24' %}")
+    assert "10.0.0.0/24" in out
+    assert 'data-info-trigger="cidr-info-' in out
+    assert 'aria-describedby="cidr-info-' in out
+    assert 'popover="auto"' in out
+    assert 'role="button"' in out
+    assert 'tabindex="0"' in out
+
+
+def test_cidr_info_panel_contains_lines():
+    out = render_tpl("{% cidr_info '10.0.0.0/24' %}")
+    assert "Network" in out
+    assert "10.0.0.0" in out
+    assert "10.0.0.1" in out
+    assert "10.0.0.254" in out
+    assert "Broadcast" in out
+
+
+def test_cidr_info_uses_no_legacy_hover_classes():
+    out = render_tpl("{% cidr_info '10.0.0.0/24' %}")
+    assert "group-hover:" not in out
+    assert "pointer-events-none" not in out
+
+
+def test_cidr_info_invalid_input_renders_text_without_popover():
+    out = render_tpl("{% cidr_info 'not-a-cidr' %}")
+    assert "not-a-cidr" in out
+    assert "popover" not in out
+    assert "data-info-trigger" not in out
+
+
+def test_cidr_info_escapes_user_input():
+    out = render_tpl("{% cidr_info '<script>alert(1)</script>' %}")
+    assert "<script>" not in out
+    assert "&lt;script&gt;" in out
+
+
+def test_cidr_info_panel_ids_unique_across_calls():
+    out = render_tpl(
+        "{% cidr_info '10.0.0.0/24' %}{% cidr_info '10.0.1.0/24' %}"
+    )
+    ids = re.findall(r'popover="auto" id="([^"]+)"', out)
+    assert len(ids) == 2
+    assert ids[0] != ids[1]

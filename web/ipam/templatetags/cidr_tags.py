@@ -3,8 +3,33 @@ from django.conf import settings
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from netaddr import IPNetwork
+import itertools
 
 register = template.Library()
+
+
+# Monotonic counter for unique popover ids across a single page render.
+# Thread-safe in CPython thanks to the GIL.
+_INFO_ID_COUNTER = itertools.count()
+
+
+def _next_info_id():
+    return f"cidr-info-{next(_INFO_ID_COUNTER)}"
+
+
+def _info_panel_html(lines, panel_id):
+    body = "<br>".join(
+        f"<span class='inline-block w-28'>{escape(k)}:</span>{escape(v)}"
+        for k, v in lines
+    )
+    return (
+        f'<div popover="auto" id="{panel_id}" '
+        'class="info-panel bg-slate-900 text-white text-xs font-mono '
+        'rounded shadow-lg px-3 py-2 normal-case font-normal m-0 '
+        'max-w-xs whitespace-nowrap">'
+        f'{body}'
+        '</div>'
+    )
 
 
 @register.simple_tag
@@ -96,3 +121,28 @@ def free_suggestions_tooltip_panel(suggestions, size):
         f'{body}'
         '</span>'
     )
+
+
+@register.simple_tag
+def cidr_info(cidr):
+    """Render CIDR as text with a popover info-box (self-contained).
+
+    Trigger and panel both rendered; panel uses HTML popover='auto' for
+    top-layer rendering (escapes overflow:auto containers and viewport
+    edges). Hover/focus/long-press behavior bound by popover.js.
+    """
+    lines = _tooltip_lines(cidr)
+    cidr_display = escape(str(cidr))
+    if lines is None:
+        return mark_safe(cidr_display)
+    panel_id = _next_info_id()
+    trigger = (
+        f'<span data-info-trigger="{panel_id}" '
+        f'aria-describedby="{panel_id}" '
+        f'tabindex="0" role="button" '
+        f'class="cursor-help inline-block select-none">'
+        f'{cidr_display}'
+        f'</span>'
+    )
+    panel = _info_panel_html(lines, panel_id)
+    return mark_safe(trigger + panel)
