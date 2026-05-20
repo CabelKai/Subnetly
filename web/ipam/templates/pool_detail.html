@@ -5,7 +5,7 @@
 <div class="mb-4 flex items-center justify-between">
     <div>
         <h1 class="text-2xl font-bold">{{ pool.name }}</h1>
-        <p class="text-slate-500 font-mono text-sm">{% cidr_tooltip pool.cidr %}</p>
+        <p class="text-slate-500 font-mono text-sm">{% cidr_info pool.cidr %}</p>
     </div>
     <div class="flex gap-2">
         <a href="{% url 'ipam:pool_edit' pool.id %}"
@@ -24,11 +24,12 @@
     <div class="flex flex-wrap gap-1 items-stretch overflow-x-auto">
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
-                <div class="group relative grow rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                     style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; background-color: {{ b.color }};"
-                     title="{{ b.app_names }}">
+                {% with pid="info-blk-"|add:forloop.counter %}
+                <div class="relative grow rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity select-none [-webkit-touch-callout:none]"
+                     style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
-                       class="block no-underline text-slate-900">
+                       class="block no-underline text-slate-900"
+                       {% cidr_info_trigger b.cidr pid %}>
                         {% for name in b.app_list %}
                             <span class="font-semibold block">{{ name }}</span>
                         {% empty %}
@@ -36,16 +37,20 @@
                         {% endfor %}
                         <span class="font-mono block">{{ b.cidr }}</span>
                     </a>
-                    {% cidr_tooltip_panel b.cidr %}
+                    {% cidr_info_panel b.cidr pid %}
                 </div>
+                {% endwith %}
             {% else %}
+                {% with pid="info-free-"|add:forloop.counter %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
-                   class="group relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline"
-                   style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%;">
+                   class="relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline select-none [-webkit-touch-callout:none]"
+                   style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%;"
+                   {% if b.suggestions %}data-info-trigger="{{ pid }}" aria-describedby="{{ pid }}"{% endif %}>
                     <span class="block">frei</span>
                     <span class="font-mono block">{{ b.size }} IPs</span>
-                    {% free_suggestions_tooltip_panel b.suggestions b.size %}
                 </a>
+                {% if b.suggestions %}{% free_suggestions_info_panel b.suggestions b.size pid %}{% endif %}
+                {% endwith %}
             {% endif %}
         {% endfor %}
     </div>
@@ -63,7 +68,7 @@
         <div class="block md:grid md:grid-cols-[1fr_1fr_120px] border-t p-3 md:p-0 hover:bg-slate-50">
             <div class="md:px-3 md:py-2 font-mono flex justify-between md:block">
                 <span class="md:hidden text-xs font-semibold text-slate-500">CIDR</span>
-                {% cidr_tooltip row.cidr %}
+                {% cidr_info row.cidr %}
             </div>
             <div class="md:px-3 md:py-2 flex justify-between md:block mt-1 md:mt-0">
                 <span class="md:hidden text-xs font-semibold text-slate-500">Anwendungen</span>
