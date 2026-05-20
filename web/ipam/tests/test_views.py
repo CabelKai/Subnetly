@@ -1135,10 +1135,11 @@ def test_login_locks_out_after_5_failed_attempts(db, client):
 
 @pytest.mark.django_db
 def test_base_template_includes_popover_js_script(auth_client):
-    """Regression guard: popover.js must be wired into base.html so that
-    cidr_info popovers actually bind on the client."""
+    """Regression guard: popover.js must be wired into base.html as a
+    deferred script so that cidr_info popovers actually bind on the
+    client without blocking initial render."""
+    import re as _re
     response = auth_client.get("/")
     body = response.content.decode()
-    assert "popover.js" in body
-    # Defer attribute keeps page-render unblocked
-    assert "defer" in body
+    assert _re.search(r'<script[^>]+popover\.js[^>]*\bdefer\b', body), \
+        "expected <script ... popover.js ... defer> in rendered base.html"

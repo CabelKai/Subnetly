@@ -11,6 +11,7 @@
   const GAP_PX = 4;
   const EDGE_PX = 8;
   const SUPPRESS_RESET_MS = 100;
+  const PRESS_MOVE_TOLERANCE_PX = 10;
 
   function positionPopover(trigger, panel) {
     panel.style.position = 'fixed';
@@ -42,6 +43,7 @@
         panel.showPopover();
       }
     } catch (e) {
+      console.warn('popover.js: showPopover failed', e, panel);
       return;
     }
     positionPopover(trigger, panel);
@@ -53,7 +55,7 @@
         panel.hidePopover();
       }
     } catch (e) {
-      /* ignore */
+      console.warn('popover.js: hidePopover failed', e, panel);
     }
   }
 
@@ -89,8 +91,12 @@
     });
 
     // Touch long-press
+    let pressOriginX = 0;
+    let pressOriginY = 0;
     trigger.addEventListener('pointerdown', function (e) {
       if (e.pointerType !== 'touch') return;
+      pressOriginX = e.clientX;
+      pressOriginY = e.clientY;
       clearTimeout(pressTimer);
       pressTimer = setTimeout(function () {
         showPopover(trigger, panel);
@@ -100,7 +106,15 @@
     });
     const cancelPress = function () { clearTimeout(pressTimer); };
     trigger.addEventListener('pointerup', cancelPress);
-    trigger.addEventListener('pointermove', cancelPress);
+    trigger.addEventListener('pointermove', function (e) {
+      // Only cancel if the user moved enough to indicate scroll/drag intent.
+      // Cheap dx+dy approximation avoids a sqrt per pointermove.
+      const dx = Math.abs(e.clientX - pressOriginX);
+      const dy = Math.abs(e.clientY - pressOriginY);
+      if (dx > PRESS_MOVE_TOLERANCE_PX || dy > PRESS_MOVE_TOLERANCE_PX) {
+        cancelPress();
+      }
+    });
     trigger.addEventListener('pointercancel', cancelPress);
     trigger.addEventListener('pointerleave', cancelPress);
 
@@ -113,14 +127,22 @@
       }
     }, true);
 
-    // Re-position on resize/scroll while open
+    // Reposition on resize/scroll while popover is open. We attach the
+    // window listeners only when the popover opens, and remove them when
+    // it closes, so listener count stays bounded regardless of trigger
+    // count on the page.
     const reposition = function () {
-      if (panel.matches(':popover-open')) {
-        positionPopover(trigger, panel);
-      }
+      positionPopover(trigger, panel);
     };
-    window.addEventListener('resize', reposition);
-    window.addEventListener('scroll', reposition, true);
+    panel.addEventListener('toggle', function (e) {
+      if (e.newState === 'open') {
+        window.addEventListener('resize', reposition);
+        window.addEventListener('scroll', reposition, true);
+      } else {
+        window.removeEventListener('resize', reposition);
+        window.removeEventListener('scroll', reposition, true);
+      }
+    });
   }
 
   function initInfoPopovers() {
