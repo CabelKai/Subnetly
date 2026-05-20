@@ -25,11 +25,11 @@
     <div class="block md:grid md:grid-cols-[200px_200px_1fr_120px] border-t p-3 md:p-0 hover:bg-slate-50">
         <div class="md:p-2 font-mono flex justify-between md:block">
             <span class="md:hidden text-xs font-semibold text-slate-500">Pool</span>
-            <a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{% cidr_tooltip a.pool.cidr %}</a>
+            <a href="{% url 'ipam:pool_detail' a.pool.id %}" class="underline">{% cidr_info a.pool.cidr %}</a>
         </div>
         <div class="md:p-2 font-mono flex justify-between md:block mt-1 md:mt-0">
             <span class="md:hidden text-xs font-semibold text-slate-500">CIDR</span>
-            {% cidr_tooltip a.cidr %}
+            {% cidr_info a.cidr %}
         </div>
         <div class="md:p-2 text-slate-600 mt-1 md:mt-0">
             <span class="md:hidden text-xs font-semibold text-slate-500 block">Notes</span>
