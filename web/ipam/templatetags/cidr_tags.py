@@ -180,3 +180,31 @@ def cidr_info_panel(cidr, panel_id):
     if lines is None:
         return ""
     return mark_safe(_info_panel_html(lines, panel_id))
+
+
+@register.simple_tag
+def free_suggestions_info_panel(suggestions, size, panel_id):
+    """Popover panel for a free grid block, listing aligned-subnet suggestions.
+
+    Returns empty string if suggestions is empty.
+    """
+    if not suggestions:
+        return ""
+    lines = [f"<span class='inline-block w-28'>Frei:</span>{escape(str(size))} IPs"]
+    lines.append("<span class='block mt-2 mb-1 text-slate-400'>Vorschläge:</span>")
+    for s in suggestions:
+        lines.append(
+            f"<span class='inline-block w-12 text-slate-300'>/{escape(str(s['prefix']))}</span>"
+            f"<span class='inline-block w-44'>ab {escape(str(s['network']))}</span>"
+            f"({escape(str(s['size']))} IPs)"
+        )
+    body = "<br>".join(lines)
+    pid = escape(str(panel_id))
+    return mark_safe(
+        f'<div popover="auto" id="{pid}" '
+        'class="info-panel bg-slate-900 text-white text-xs font-mono '
+        'rounded shadow-lg px-3 py-2 normal-case font-normal m-0 '
+        'max-w-xs whitespace-nowrap">'
+        f'{body}'
+        '</div>'
+    )

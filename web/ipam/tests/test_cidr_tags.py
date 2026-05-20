@@ -237,3 +237,39 @@ def test_cidr_info_split_tags_ids_match():
     assert 'aria-describedby="block-42"' in trigger
     assert 'data-info-trigger="block-42"' in trigger
     assert 'id="block-42"' in panel
+
+
+def test_free_suggestions_info_panel_renders_list():
+    sugs = [
+        {"prefix": 23, "network": "45.151.170.0", "size": 512, "cidr": "45.151.170.0/23"},
+        {"prefix": 24, "network": "45.151.169.0", "size": 256, "cidr": "45.151.169.0/24"},
+    ]
+    out = render_tpl(
+        "{% free_suggestions_info_panel suggestions 1020 'free-1' %}",
+        {"suggestions": sugs},
+    )
+    assert 'popover="auto"' in out
+    assert 'id="free-1"' in out
+    assert "Frei" in out
+    assert "1020 IPs" in out
+    assert "Vorschläge" in out
+    assert "/23" in out and "45.151.170.0" in out and "512 IPs" in out
+    assert "/24" in out and "45.151.169.0" in out and "256 IPs" in out
+
+
+def test_free_suggestions_info_panel_empty_returns_empty():
+    out = render_tpl(
+        "{% free_suggestions_info_panel suggestions 0 'free-1' %}",
+        {"suggestions": []},
+    )
+    assert out.strip() == ""
+
+
+def test_free_suggestions_info_panel_uses_no_legacy_hover_classes():
+    sugs = [{"prefix": 24, "network": "10.0.0.0", "size": 256, "cidr": "10.0.0.0/24"}]
+    out = render_tpl(
+        "{% free_suggestions_info_panel suggestions 256 'free-1' %}",
+        {"suggestions": sugs},
+    )
+    assert "group-hover:" not in out
+    assert "pointer-events-none" not in out
