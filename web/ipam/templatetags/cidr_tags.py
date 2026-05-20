@@ -17,12 +17,14 @@ def _next_info_id():
     return f"cidr-info-{next(_INFO_ID_COUNTER)}"
 
 
-def _info_panel_html(lines, panel_id):
+def _popover_wrapper(body, panel_id):
+    """Wrap pre-built body markup in the standard popover='auto' div.
+
+    Single source of truth for the outer container (Tailwind classes,
+    attribute order). Body must already be a complete, escaped HTML
+    fragment. panel_id is escaped here; do not pre-escape.
+    """
     safe_id = escape(str(panel_id))
-    body = "<br>".join(
-        f"<span class='inline-block w-28'>{escape(k)}:</span>{escape(v)}"
-        for k, v in lines
-    )
     return (
         f'<div popover="auto" id="{safe_id}" '
         'class="info-panel bg-slate-900 text-white text-xs font-mono '
@@ -31,6 +33,14 @@ def _info_panel_html(lines, panel_id):
         f'{body}'
         '</div>'
     )
+
+
+def _info_panel_html(lines, panel_id):
+    body = "<br>".join(
+        f"<span class='inline-block w-28'>{escape(k)}:</span>{escape(v)}"
+        for k, v in lines
+    )
+    return _popover_wrapper(body, panel_id)
 
 
 @register.simple_tag
@@ -199,12 +209,4 @@ def free_suggestions_info_panel(suggestions, size, panel_id):
             f"({escape(str(s['size']))} IPs)"
         )
     body = "<br>".join(lines)
-    pid = escape(str(panel_id))
-    return mark_safe(
-        f'<div popover="auto" id="{pid}" '
-        'class="info-panel bg-slate-900 text-white text-xs font-mono '
-        'rounded shadow-lg px-3 py-2 normal-case font-normal m-0 '
-        'max-w-xs whitespace-nowrap">'
-        f'{body}'
-        '</div>'
-    )
+    return mark_safe(_popover_wrapper(body, panel_id))
