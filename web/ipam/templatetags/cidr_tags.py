@@ -147,3 +147,36 @@ def cidr_info(cidr):
     )
     panel = _info_panel_html(lines, panel_id)
     return mark_safe(trigger + panel)
+
+
+@register.simple_tag
+def cidr_info_trigger(cidr, panel_id):
+    """Render only the trigger attributes for a CIDR popover.
+
+    Caller spreads these attributes onto an existing element (e.g. an
+    <a> wrapping a grid block). Caller must also render
+    cidr_info_panel with the SAME panel_id as a sibling.
+
+    Returns empty string for invalid CIDR (no popover rendered).
+    """
+    if _tooltip_lines(cidr) is None:
+        return ""
+    pid = escape(str(panel_id))
+    return mark_safe(
+        f'data-info-trigger="{pid}" aria-describedby="{pid}"'
+    )
+
+
+@register.simple_tag
+def cidr_info_panel(cidr, panel_id):
+    """Render only the popover panel <div> for a CIDR.
+
+    Caller provides panel_id and places the panel as a sibling of the
+    element bearing the matching cidr_info_trigger attributes.
+
+    Returns empty string for invalid CIDR.
+    """
+    lines = _tooltip_lines(cidr)
+    if lines is None:
+        return ""
+    return mark_safe(_info_panel_html(lines, escape(str(panel_id))))

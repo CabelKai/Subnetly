@@ -196,3 +196,36 @@ def test_cidr_info_trigger_references_panel_id():
     trigger_id = re.search(r'data-info-trigger="([^"]+)"', out).group(1)
     panel_id = re.search(r'popover="auto" id="([^"]+)"', out).group(1)
     assert trigger_id == panel_id
+
+
+def test_cidr_info_trigger_renders_only_attributes():
+    out = render_tpl("{% cidr_info_trigger '10.0.0.0/24' 'pid-1' %}")
+    assert 'data-info-trigger="pid-1"' in out
+    assert 'aria-describedby="pid-1"' in out
+    assert "popover" not in out
+    assert "<div" not in out
+    assert "<span" not in out
+
+
+def test_cidr_info_trigger_invalid_returns_empty():
+    out = render_tpl("{% cidr_info_trigger 'not-a-cidr' 'pid-1' %}")
+    assert out.strip() == ""
+
+
+def test_cidr_info_panel_uses_given_id():
+    out = render_tpl("{% cidr_info_panel '10.0.0.0/24' 'my-id' %}")
+    assert 'popover="auto"' in out
+    assert 'id="my-id"' in out
+    assert "Network" in out
+    assert "Broadcast" in out
+
+
+def test_cidr_info_panel_invalid_returns_empty():
+    out = render_tpl("{% cidr_info_panel 'not-a-cidr' 'pid-1' %}")
+    assert out.strip() == ""
+
+
+def test_cidr_info_panel_does_not_include_outer_trigger():
+    out = render_tpl("{% cidr_info_panel '10.0.0.0/24' 'pid-1' %}")
+    assert "data-info-trigger" not in out
+    assert 'role="button"' not in out
