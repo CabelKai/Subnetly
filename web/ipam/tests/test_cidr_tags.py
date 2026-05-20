@@ -229,3 +229,11 @@ def test_cidr_info_panel_does_not_include_outer_trigger():
     out = render_tpl("{% cidr_info_panel '10.0.0.0/24' 'pid-1' %}")
     assert "data-info-trigger" not in out
     assert 'role="button"' not in out
+
+
+def test_cidr_info_split_tags_ids_match():
+    trigger = render_tpl("{% cidr_info_trigger '10.0.0.0/24' 'block-42' %}")
+    panel = render_tpl("{% cidr_info_panel   '10.0.0.0/24' 'block-42' %}")
+    assert 'aria-describedby="block-42"' in trigger
+    assert 'data-info-trigger="block-42"' in trigger
+    assert 'id="block-42"' in panel

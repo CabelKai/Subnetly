@@ -179,4 +179,4 @@ def cidr_info_panel(cidr, panel_id):
     lines = _tooltip_lines(cidr)
     if lines is None:
         return ""
-    return mark_safe(_info_panel_html(lines, escape(str(panel_id))))
+    return mark_safe(_info_panel_html(lines, panel_id))
