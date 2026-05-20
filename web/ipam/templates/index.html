@@ -14,7 +14,7 @@
     <a href="{% url 'ipam:pool_detail' card.pool.id %}" class="bg-white rounded shadow p-4 hover:shadow-md">
         <div class="text-xs text-slate-500">IPv{{ card.pool.ip_version }}</div>
         <div class="font-semibold">{{ card.pool.name }}</div>
-        <div class="font-mono text-sm text-slate-600">{% cidr_tooltip card.pool.cidr %}</div>
+        <div class="font-mono text-sm text-slate-600">{% cidr_info card.pool.cidr %}</div>
         <div class="mt-3">
             <div class="text-xs text-slate-500 mb-1">{{ card.utilization }}% belegt · {{ card.assignment_count }} Subnetz(e)</div>
             <div class="h-2 bg-slate-200 rounded overflow-hidden">
