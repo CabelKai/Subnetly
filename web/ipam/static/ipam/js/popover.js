@@ -8,56 +8,65 @@
 
   const HOVER_DELAY_MS = 150;
   const LONGPRESS_MS = 500;
-  const GAP_PX = 4;
+  const GAP_PX = 12;
   const EDGE_PX = 8;
   const SUPPRESS_RESET_MS = 100;
   const PRESS_MOVE_TOLERANCE_PX = 10;
 
-  function dbg() {
-    if (!window.__popoverDebug) return;
-    var args = Array.prototype.slice.call(arguments);
-    args.unshift('[popover]');
-    console.log.apply(console, args);
-  }
-
   function positionPopover(trigger, panel) {
+    // Reset UA defaults (inset:0; margin:auto) that would otherwise
+    // conflict with our explicit fixed positioning.
     panel.style.position = 'fixed';
     panel.style.margin = '0';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.inset = 'auto';
+
     const r = trigger.getBoundingClientRect();
-    let top = r.bottom + GAP_PX;
-    let left = r.left;
-    const h = panel.offsetHeight;
     const w = panel.offsetWidth;
-    if (top + h > window.innerHeight - EDGE_PX) {
-      top = r.top - h - GAP_PX;
+    const h = panel.offsetHeight;
+
+    // Vertical: prefer ABOVE the trigger (so the user's finger on touch
+    // doesn't cover the popover). Fall back to below if there's no room.
+    const aboveTop = r.top - h - GAP_PX;
+    const belowTop = r.bottom + GAP_PX;
+    let top;
+    if (aboveTop >= EDGE_PX) {
+      top = aboveTop;
+    } else if (belowTop + h <= window.innerHeight - EDGE_PX) {
+      top = belowTop;
+    } else {
+      // Neither side fits — pick the side with more room and clamp.
+      const roomAbove = r.top;
+      const roomBelow = window.innerHeight - r.bottom;
+      top = roomAbove > roomBelow
+        ? Math.max(EDGE_PX, aboveTop)
+        : Math.min(window.innerHeight - h - EDGE_PX, belowTop);
     }
-    if (top < EDGE_PX) {
-      top = r.bottom + GAP_PX;
-    }
+
+    // Horizontal: center on the trigger, then clamp to viewport.
+    let left = r.left + r.width / 2 - w / 2;
     if (left + w > window.innerWidth - EDGE_PX) {
       left = window.innerWidth - w - EDGE_PX;
     }
     if (left < EDGE_PX) {
       left = EDGE_PX;
     }
+
     panel.style.top = top + 'px';
     panel.style.left = left + 'px';
   }
 
   function showPopover(trigger, panel) {
-    dbg('showPopover called for', panel.id, 'popover-supported?', typeof panel.showPopover === 'function');
     try {
       if (!panel.matches(':popover-open')) {
         panel.showPopover();
-        dbg('showPopover() OK, now open?', panel.matches(':popover-open'));
       }
     } catch (e) {
       console.warn('popover.js: showPopover failed', e, panel);
-      dbg('showPopover THREW:', e.message);
       return;
     }
     positionPopover(trigger, panel);
-    dbg('positioned at', panel.style.top, panel.style.left, 'size', panel.offsetWidth, 'x', panel.offsetHeight);
   }
 
   function hidePopover(panel) {
@@ -117,39 +126,33 @@
     let pressOriginY = 0;
     let pressActive = false;
     trigger.addEventListener('pointerdown', function (e) {
-      dbg('pointerdown', e.pointerType, 'panel=', panelId);
       if (e.pointerType !== 'touch') return;
       pressOriginX = e.clientX;
       pressOriginY = e.clientY;
       pressActive = true;
       clearTimeout(pressTimer);
       pressTimer = setTimeout(function () {
-        dbg('long-press timer FIRED for', panelId);
         showPopover(trigger, panel);
         suppressClick = true;
         setTimeout(function () { suppressClick = false; }, SUPPRESS_RESET_MS);
       }, LONGPRESS_MS);
     });
-    const cancelPress = function (reason) {
-      if (pressActive) dbg('press CANCELLED', reason || '');
+    const cancelPress = function () {
       clearTimeout(pressTimer);
       pressActive = false;
     };
-    trigger.addEventListener('pointerup', function () { cancelPress('pointerup'); });
+    trigger.addEventListener('pointerup', cancelPress);
     trigger.addEventListener('pointermove', function (e) {
       const dx = Math.abs(e.clientX - pressOriginX);
       const dy = Math.abs(e.clientY - pressOriginY);
       if (dx > PRESS_MOVE_TOLERANCE_PX || dy > PRESS_MOVE_TOLERANCE_PX) {
-        cancelPress('pointermove>' + PRESS_MOVE_TOLERANCE_PX + 'px (dx=' + dx + ' dy=' + dy + ')');
+        cancelPress();
       }
     });
-    trigger.addEventListener('pointercancel', function () { dbg('pointercancel fired (NOT cancelling timer)'); });
-    trigger.addEventListener('pointerleave', function () { dbg('pointerleave fired (NOT cancelling timer)'); });
 
     // Suppress the browser's long-press context menu (Android Chrome) and
     // any right-click menu on desktop for trigger elements.
     trigger.addEventListener('contextmenu', function (e) {
-      dbg('contextmenu prevented');
       e.preventDefault();
     });
 
@@ -181,11 +184,7 @@
   }
 
   function initInfoPopovers() {
-    var triggers = document.querySelectorAll('[data-info-trigger]');
-    dbg('init: binding', triggers.length, 'triggers; popover supported?',
-        typeof HTMLElement.prototype.showPopover === 'function',
-        'hover:hover?', window.matchMedia('(hover: hover)').matches);
-    triggers.forEach(bindTrigger);
+    document.querySelectorAll('[data-info-trigger]').forEach(bindTrigger);
   }
 
   if (document.readyState === 'loading') {
