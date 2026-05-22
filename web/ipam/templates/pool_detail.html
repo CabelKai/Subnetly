@@ -24,7 +24,7 @@
     <div class="flex flex-wrap gap-1 items-stretch overflow-x-auto">
         {% for b in blocks %}
             {% if b.kind == "assigned" %}
-                {% with pid="info-blk-"|add:forloop.counter %}
+                {% with c=forloop.counter|stringformat:"s" %}{% with pid="info-blk-"|add:c %}
                 <div class="relative grow rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity select-none [-webkit-touch-callout:none]"
                      style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
@@ -39,9 +39,9 @@
                     </a>
                     {% cidr_info_panel b.cidr pid %}
                 </div>
-                {% endwith %}
+                {% endwith %}{% endwith %}
             {% else %}
-                {% with pid="info-free-"|add:forloop.counter %}
+                {% with c=forloop.counter|stringformat:"s" %}{% with pid="info-free-"|add:c %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
                    class="relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline select-none touch-manipulation [-webkit-touch-callout:none]"
                    style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%;"
@@ -50,7 +50,7 @@
                     <span class="font-mono block">{{ b.size }} IPs</span>
                 </a>
                 {% if b.suggestions %}{% free_suggestions_info_panel b.suggestions b.size pid %}{% endif %}
-                {% endwith %}
+                {% endwith %}{% endwith %}
             {% endif %}
         {% endfor %}
     </div>
