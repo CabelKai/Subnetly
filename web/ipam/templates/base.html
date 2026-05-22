@@ -11,6 +11,17 @@
     <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
     {% endif %}
     <script src="{% static 'ipam/js/popover.js' %}" defer></script>
+    <script>
+    // Mobile-debug: load eruda (in-page console) and enable popover.js
+    // verbose logging when ?debug=1 is in the URL. Temporary diagnostic.
+    if (location.search.indexOf('debug=1') !== -1) {
+      window.__popoverDebug = true;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      s.onload = function () { eruda.init(); };
+      document.head.appendChild(s);
+    }
+    </script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen">
 

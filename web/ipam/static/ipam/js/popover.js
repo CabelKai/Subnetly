@@ -13,6 +13,13 @@
   const SUPPRESS_RESET_MS = 100;
   const PRESS_MOVE_TOLERANCE_PX = 10;
 
+  function dbg() {
+    if (!window.__popoverDebug) return;
+    var args = Array.prototype.slice.call(arguments);
+    args.unshift('[popover]');
+    console.log.apply(console, args);
+  }
+
   function positionPopover(trigger, panel) {
     panel.style.position = 'fixed';
     panel.style.margin = '0';
@@ -38,15 +45,19 @@
   }
 
   function showPopover(trigger, panel) {
+    dbg('showPopover called for', panel.id, 'popover-supported?', typeof panel.showPopover === 'function');
     try {
       if (!panel.matches(':popover-open')) {
         panel.showPopover();
+        dbg('showPopover() OK, now open?', panel.matches(':popover-open'));
       }
     } catch (e) {
       console.warn('popover.js: showPopover failed', e, panel);
+      dbg('showPopover THREW:', e.message);
       return;
     }
     positionPopover(trigger, panel);
+    dbg('positioned at', panel.style.top, panel.style.left, 'size', panel.offsetWidth, 'x', panel.offsetHeight);
   }
 
   function hidePopover(panel) {
@@ -106,36 +117,39 @@
     let pressOriginY = 0;
     let pressActive = false;
     trigger.addEventListener('pointerdown', function (e) {
+      dbg('pointerdown', e.pointerType, 'panel=', panelId);
       if (e.pointerType !== 'touch') return;
       pressOriginX = e.clientX;
       pressOriginY = e.clientY;
       pressActive = true;
       clearTimeout(pressTimer);
       pressTimer = setTimeout(function () {
+        dbg('long-press timer FIRED for', panelId);
         showPopover(trigger, panel);
         suppressClick = true;
         setTimeout(function () { suppressClick = false; }, SUPPRESS_RESET_MS);
       }, LONGPRESS_MS);
     });
-    const cancelPress = function () {
+    const cancelPress = function (reason) {
+      if (pressActive) dbg('press CANCELLED', reason || '');
       clearTimeout(pressTimer);
       pressActive = false;
     };
-    trigger.addEventListener('pointerup', cancelPress);
+    trigger.addEventListener('pointerup', function () { cancelPress('pointerup'); });
     trigger.addEventListener('pointermove', function (e) {
-      // Only cancel if the user moved enough to indicate scroll/drag intent.
       const dx = Math.abs(e.clientX - pressOriginX);
       const dy = Math.abs(e.clientY - pressOriginY);
       if (dx > PRESS_MOVE_TOLERANCE_PX || dy > PRESS_MOVE_TOLERANCE_PX) {
-        cancelPress();
+        cancelPress('pointermove>' + PRESS_MOVE_TOLERANCE_PX + 'px (dx=' + dx + ' dy=' + dy + ')');
       }
     });
+    trigger.addEventListener('pointercancel', function () { dbg('pointercancel fired (NOT cancelling timer)'); });
+    trigger.addEventListener('pointerleave', function () { dbg('pointerleave fired (NOT cancelling timer)'); });
 
     // Suppress the browser's long-press context menu (Android Chrome) and
-    // also any right-click menu on desktop for trigger elements. If our
-    // long-press fired, the popover replaces the menu; if it didn't, the
-    // user likely wants to click the link, not get a menu.
+    // any right-click menu on desktop for trigger elements.
     trigger.addEventListener('contextmenu', function (e) {
+      dbg('contextmenu prevented');
       e.preventDefault();
     });
 
@@ -167,7 +181,11 @@
   }
 
   function initInfoPopovers() {
-    document.querySelectorAll('[data-info-trigger]').forEach(bindTrigger);
+    var triggers = document.querySelectorAll('[data-info-trigger]');
+    dbg('init: binding', triggers.length, 'triggers; popover supported?',
+        typeof HTMLElement.prototype.showPopover === 'function',
+        'hover:hover?', window.matchMedia('(hover: hover)').matches);
+    triggers.forEach(bindTrigger);
   }
 
   if (document.readyState === 'loading') {
