@@ -28,8 +28,9 @@ def _popover_wrapper(body, panel_id):
     return (
         f'<div popover="auto" id="{safe_id}" '
         'class="info-panel bg-slate-900 text-white text-xs font-mono '
-        'rounded shadow-lg px-3 py-2 normal-case font-normal m-0 '
-        'max-w-xs whitespace-nowrap">'
+        'rounded shadow-lg px-3 py-2 normal-case font-normal m-0" '
+        'style="max-width:min(90vw,22rem);word-break:break-word;'
+        'overflow-wrap:anywhere;">'
         f'{body}'
         '</div>'
     )
