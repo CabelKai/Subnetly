@@ -28,7 +28,7 @@
                 <div class="relative grow rounded p-2 text-xs cursor-pointer hover:opacity-80 transition-opacity select-none [-webkit-touch-callout:none]"
                      style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%; background-color: {{ b.color }};">
                     <a href="{% url 'ipam:assignment_edit' b.obj.id %}"
-                       class="block no-underline text-slate-900"
+                       class="block no-underline text-slate-900 touch-manipulation"
                        {% cidr_info_trigger b.cidr pid %}>
                         {% for name in b.app_list %}
                             <span class="font-semibold block">{{ name }}</span>
@@ -43,7 +43,7 @@
             {% else %}
                 {% with pid="info-free-"|add:forloop.counter %}
                 <a href="{% url 'ipam:assignment_new' pool.id %}{% if b.suggestions %}?cidr={{ b.suggestions.0.cidr }}{% endif %}"
-                   class="relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline select-none [-webkit-touch-callout:none]"
+                   class="relative grow block rounded border border-dashed border-blue-800 bg-blue-50 p-2 text-xs text-blue-500 hover:bg-blue-100 hover:border-blue-900 no-underline select-none touch-manipulation [-webkit-touch-callout:none]"
                    style="flex-basis: {{ b.width_rem }}rem; min-width: max-content; max-width: 100%;"
                    {% if b.suggestions %}data-info-trigger="{{ pid }}" aria-describedby="{{ pid }}"{% endif %}>
                     <span class="block">frei</span>

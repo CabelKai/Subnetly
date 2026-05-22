@@ -91,12 +91,25 @@
     });
 
     // Touch long-press
+    //
+    // We DELIBERATELY do not cancel on `pointercancel` or `pointerleave`.
+    // Mobile browsers fire `pointercancel` when they decide to "take over"
+    // the gesture for their own long-press handling (link callout, context
+    // menu) — which happens at roughly the same 500 ms threshold we use.
+    // Cancelling on it would race against the browser and lose. Instead we
+    // suppress the browser's own UI with -webkit-touch-callout:none + the
+    // contextmenu listener below, and let our timer run to completion.
+    //
+    // The pointermove > tolerance check below already catches scroll/drag
+    // intent, so pointerleave is not needed as a separate cancel signal.
     let pressOriginX = 0;
     let pressOriginY = 0;
+    let pressActive = false;
     trigger.addEventListener('pointerdown', function (e) {
       if (e.pointerType !== 'touch') return;
       pressOriginX = e.clientX;
       pressOriginY = e.clientY;
+      pressActive = true;
       clearTimeout(pressTimer);
       pressTimer = setTimeout(function () {
         showPopover(trigger, panel);
@@ -104,19 +117,27 @@
         setTimeout(function () { suppressClick = false; }, SUPPRESS_RESET_MS);
       }, LONGPRESS_MS);
     });
-    const cancelPress = function () { clearTimeout(pressTimer); };
+    const cancelPress = function () {
+      clearTimeout(pressTimer);
+      pressActive = false;
+    };
     trigger.addEventListener('pointerup', cancelPress);
     trigger.addEventListener('pointermove', function (e) {
       // Only cancel if the user moved enough to indicate scroll/drag intent.
-      // Cheap dx+dy approximation avoids a sqrt per pointermove.
       const dx = Math.abs(e.clientX - pressOriginX);
       const dy = Math.abs(e.clientY - pressOriginY);
       if (dx > PRESS_MOVE_TOLERANCE_PX || dy > PRESS_MOVE_TOLERANCE_PX) {
         cancelPress();
       }
     });
-    trigger.addEventListener('pointercancel', cancelPress);
-    trigger.addEventListener('pointerleave', cancelPress);
+
+    // Suppress the browser's long-press context menu (Android Chrome) and
+    // also any right-click menu on desktop for trigger elements. If our
+    // long-press fired, the popover replaces the menu; if it didn't, the
+    // user likely wants to click the link, not get a menu.
+    trigger.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
 
     // Click suppression after long-press (capture phase to beat link/button default)
     trigger.addEventListener('click', function (e) {
