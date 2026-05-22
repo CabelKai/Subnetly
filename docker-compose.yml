@@ -62,12 +62,13 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_backups:/backups
+      # Backups go directly to the Nextcloud-synced share, following the
+      # pattern used by other projects (RadiusManager, TALAuftrag, …).
+      - /srv/nextcloud_server-knt-share_mount/Backup/Subnetly:/backups
 
 volumes:
   db_data:
   static_files:
-  db_backups:
 
 networks:
   web:
